@@ -1,6 +1,6 @@
 ---
 name: context-profile
-description: Switches the context profile of the current Claude Code project - which plugins are enabled and which heavy tools are denied - by writing `.claude/settings.local.json`, so the next session loads only what the work needs, and installs a profile's missing plugins once the user agrees. Also measures how much of the skill listing budget each plugin takes. Invoke when the user asks to switch, combine, reset, show or create a profile ("switch to the web profile", "enable pbi and databricks", "global except design", "which profile is active?"), to load or unload a plugin for this project only, or asks why skills lose their descriptions or which plugins are the heaviest.
+description: Switches this project's context profile (enabled plugins, denied heavy tools) and measures each plugin's weight in the skill listing. Invoke to switch, combine, reset, show or create a profile ("switch to the web profile", "global except design", "which profile is active?"), to load or unload a plugin for this project only, or when skills lose their descriptions.
 ---
 
 # Context profiles
@@ -35,6 +35,7 @@ Profiles live in `~/.claude/context-profiles.json`, owned by the user:
   lists a tool, it is denied, which removes it from the context.
 - `basic`, if defined, is **always included**.
 - `global` is reserved: it turns on every managed plugin and allows every managed tool.
+- Profile names are case-insensitive: `Web` and `web` are the same profile.
 
 **No configuration file**: offer to create it. Start from `profiles.example.json` next to
 this file, ask which profiles the user wants, and say which of their plugins are not
@@ -62,8 +63,10 @@ list: a guardrail plugin must stay out of reach of a profile switch.
 configuration or the settings first: the script does the whole job, fast.
 
 ```bash
-python <skill-dir>/scripts/apply.py <profiles> --project <primary working directory>
+python3 <skill-dir>/scripts/apply.py <profiles> --project <primary working directory>
 ```
+
+Use `python` where `python3` is missing (often on Windows), for both scripts.
 
 - `<profiles>`: the user's words as profile names, e.g. `web`, `pbi docs`,
   `global except design`.
@@ -80,9 +83,10 @@ for the plugins and tools listed in the profiles only, keeps every other key, ne
 the plugin that ships this skill, and prints a summary. Exit code 3: unknown profile, the
 output lists the valid ones; exit code 2: configuration problem, the output says which.
 
-**Then relay the summary briefly**, and say: **the profile applies to the next session opened
-on this folder**; the current one keeps what it loaded. `/context` in the new session shows
-the result.
+**Then relay the summary briefly**, and say: **the plugins of the profile apply to the next
+session opened on this folder**; the current one keeps the plugins it loaded, but its tools
+may already follow the switch (Claude Code reloads permission rules during a session).
+`/context` in the new session shows the result.
 
 **Missing plugins** - the summary lists them under "Not installed", with their marketplace
 when it is unknown. Ask once for approval, **installing runs third-party code**, then, from
@@ -116,7 +120,7 @@ file, run `--status`.
 Run `scripts/measure.py`, next to this file, with its absolute path:
 
 ```bash
-python <skill-dir>/scripts/measure.py --project <primary working directory>
+python3 <skill-dir>/scripts/measure.py --project <primary working directory>
 ```
 
 It lists, for each installed plugin and skill folder, the number of skills, the characters
@@ -133,6 +137,9 @@ only. No Python: say so, and point to `/context`, which remains the reference.
   right one more often. The large savings are heavy built-in tools such as `Artifact`.
   MCP tools are deferred by default (loaded on demand): denying a server keeps it out of
   reach, but saves little, and its instructions stay.
+- **Allow a tool denied in the user settings.** Deny rules of every scope add up: a profile
+  can deny a tool, not lift a deny set in `~/.claude/settings.json`. `--status` then shows the
+  profile as partial.
 - **Give two parallel sessions of the same folder two profiles at start.** They read the same
   file: open the second one after switching.
 

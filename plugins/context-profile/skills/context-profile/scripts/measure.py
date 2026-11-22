@@ -66,21 +66,25 @@ def frontmatter_field(text, key):
     return ""
 
 
-def measure_folder(root, max_desc):
-    """Return (skill count, listing characters) for every SKILL.md under root."""
+def measure_folder(root, max_desc, prefix=""):
+    """Return (skill count, listing characters) for every SKILL.md under root.
+
+    `prefix` is what the listing puts before each name: `<plugin>:` for a plugin skill.
+    """
     count = chars = 0
     for skill in Path(root).rglob("SKILL.md"):
         # Skip trash and staging folders (.trash, .staging): Claude Code does not load them.
         if any(part.startswith(".") for part in skill.relative_to(root).parts):
             continue
         try:
-            text = skill.read_text(encoding="utf-8")
+            # utf-8-sig: a byte order mark would hide the frontmatter.
+            text = skill.read_text(encoding="utf-8-sig")
         except OSError:
             continue
         name = frontmatter_field(text, "name") or skill.parent.name
         desc = frontmatter_field(text, "description")
         count += 1
-        chars += len(name) + min(len(desc), max_desc)
+        chars += len(prefix) + len(name) + min(len(desc), max_desc)
     return count, chars
 
 
@@ -117,6 +121,8 @@ def main():
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET, help="listing budget in characters")
     parser.add_argument("--max-desc", type=int, default=DEFAULT_MAX_DESC, help="per-description cap")
     args = parser.parse_args()
+    if args.budget <= 0 or args.max_desc <= 0:
+        parser.error("--budget and --max-desc must be positive")
 
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -130,7 +136,7 @@ def main():
         path = install_path(entries, project)
         if not path or not Path(path).is_dir():
             continue
-        skills, chars = measure_folder(path, args.max_desc)
+        skills, chars = measure_folder(path, args.max_desc, plugin_id.split("@", 1)[0] + ":")
         if skills:
             rows.append((plugin_id, enabled.get(plugin_id) is True, skills, chars))
 

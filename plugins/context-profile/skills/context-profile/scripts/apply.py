@@ -11,7 +11,8 @@ Usage:
   apply.py --hook                   SessionStart hook: report the profile of the session
 
 Only the plugins and tools listed in the profiles are written; every other setting is kept.
-Standard library only. Exit codes: 0 ok, 2 configuration problem, 3 unknown profile.
+Profile names are case-insensitive. Standard library only.
+Exit codes: 0 ok, 2 configuration problem, 3 unknown profile.
 """
 
 import argparse
@@ -25,26 +26,52 @@ CONFIG = CLAUDE_HOME / "context-profiles.json"
 # The plugin that ships this skill: never switched by a profile.
 SELF_PLUGIN = "context-profile@"
 RESERVED = ("global", "except", "reset")
+APPLIES = ("Plugins apply to the next session opened on this folder;"
+           " tools may change in this session already.")
+
+
+class ConfigError(Exception):
+    """A problem to report: main() prints it with its exit code, the hook in its banner."""
+
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
+def fail(code, message):
+    raise ConfigError(code, message)
 
 
 def load_json(path, required=False):
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8-sig") as f:
             return json.load(f)
     except FileNotFoundError:
         if required:
             raise
         return {}
+    except ValueError as e:
+        fail(2, f"Invalid JSON in {path}: {e}")
 
 
-def fail(code, message):
-    print(message)
-    sys.exit(code)
+def load_profiles(config, config_path):
+    """Profiles keyed by lowercase name, so that `Web` and `web` are the same profile."""
+    profiles = {}
+    for name, profile in (config.get("profiles") or {}).items():
+        key = name.lower()
+        if key in profiles:
+            fail(2, f"Two profiles named {key} (case-insensitive) in {config_path}.")
+        profiles[key] = profile
+    if not profiles:
+        fail(2, f"No profiles in {config_path}.")
+    clash = sorted(set(profiles) & set(RESERVED))
+    if clash:
+        fail(2, f"Reserved word used as a profile name in {config_path}: {', '.join(clash)}.")
+    return profiles
 
 
 def resolve(profiles, words):
-    """Return the requested profile names from the request words."""
-    words = [w.lower().strip(",") for w in words if w.strip(",")]
+    """Return the requested profile names from the normalized request words."""
     requested, excluded = set(), set()
     if "global" in words:
         requested = set(profiles)
@@ -73,17 +100,18 @@ def managed(profiles):
     return plugins, tools
 
 
+def same_path(a, b):
+    return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
+
+
 def installed_ids(project):
     """Plugin ids installed for this project: user scope, or local/project scope here."""
     registry = load_json(CLAUDE_HOME / "plugins" / "installed_plugins.json").get("plugins", {})
-    here = os.path.normcase(str(project))
     ids = set()
     for plugin_id, entries in registry.items():
         for e in entries:
             path = e.get("projectPath")
-            if e.get("scope") == "user" or (
-                path and os.path.normcase(os.path.abspath(path)) == here
-            ):
+            if e.get("scope") == "user" or (path and same_path(path, project)):
                 ids.add(plugin_id)
     return ids
 
@@ -96,10 +124,7 @@ def effective(project):
     for path in (CLAUDE_HOME / "settings.json",
                  project / ".claude" / "settings.json",
                  project / ".claude" / "settings.local.json"):
-        try:
-            s = load_json(path)
-        except ValueError as e:
-            fail(2, f"Invalid JSON in {path}: {e}")
+        s = load_json(path)
         enabled.update(s.get("enabledPlugins", {}))
         deny |= set(s.get("permissions", {}).get("deny", []))
     return enabled, deny
@@ -148,18 +173,20 @@ def status_label(profiles, project, local):
 def hook(config_path):
     """SessionStart hook: silent without a configuration, never blocks the session."""
     try:
-        cwd = json.load(sys.stdin).get("cwd") or os.getcwd()
-    except ValueError:
+        # Read bytes: the hook input is UTF-8, and the console code page (cp1252 on Windows)
+        # would garble an accented folder name and report the profile of another folder.
+        cwd = json.load(sys.stdin.buffer).get("cwd") or os.getcwd()
+    except (ValueError, AttributeError):
         cwd = os.getcwd()
     try:
         config = load_json(config_path)
-        profiles = config.get("profiles")
-        if not profiles:
+        if not config.get("profiles"):
             return
+        profiles = load_profiles(config, config_path)
         project = Path(cwd).resolve()
         local = load_json(project / ".claude" / "settings.local.json")
         msg = f"Context profile: {status_label(profiles, project, local)}"
-    except (ValueError, SystemExit) as e:
+    except (ConfigError, OSError) as e:
         print(json.dumps({"systemMessage": f"Context profile: unknown ({e})"}))
         return
     context = msg + "."
@@ -174,51 +201,37 @@ def hook(config_path):
     }))
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("profiles", nargs="*", help="profile names, global except <names>, or reset")
-    parser.add_argument("--project", default=os.getcwd(), help="session folder (default: current)")
-    parser.add_argument("--config", default=str(CONFIG), help="profiles file")
-    parser.add_argument("--status", action="store_true", help="report the active profiles")
-    parser.add_argument("--dry-run", action="store_true", help="show the result, write nothing")
-    parser.add_argument("--hook", action="store_true", help="run as a SessionStart hook")
-    args = parser.parse_args()
+def write_atomic(target, settings):
+    """Write through a temporary file: an interrupted write never truncates the settings."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(target.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, target)
 
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-    if args.hook:
-        hook(args.config)
-        return
 
+def run(args):
     try:
         config = load_json(args.config, required=True)
     except FileNotFoundError:
         fail(2, f"No configuration file at {args.config}. Create it from profiles.example.json.")
-    except ValueError as e:
-        fail(2, f"Invalid JSON in {args.config}: {e}")
-    profiles = config.get("profiles", {})
-    if not profiles:
-        fail(2, f"No profiles in {args.config}.")
-    clash = sorted(set(profiles) & set(RESERVED))
-    if clash:
-        fail(2, f"Reserved word used as a profile name in {args.config}: {', '.join(clash)}.")
+    profiles = load_profiles(config, args.config)
 
     project = Path(args.project).resolve()
     target = project / ".claude" / "settings.local.json"
-    try:
-        settings = load_json(target)
-    except ValueError as e:
-        fail(2, f"Invalid JSON in {target}, left untouched: {e}")
+    settings = load_json(target)
 
     if args.status or not args.profiles:
         print("Profile: " + status_label(profiles, project, settings))
         return
 
-    words = [w.lower() for w in args.profiles]
+    # "pbi, docs" and "pbi docs" are the same request.
+    words = [w.lower().strip(",") for w in args.profiles if w.strip(",")]
     reset = "reset" in words
     if reset and len(words) > 1:
         fail(3, "reset takes no profile name: run it alone.")
-    active = set() if reset else resolve(profiles, args.profiles)
+    active = set() if reset else resolve(profiles, words)
 
     managed_plugins, managed_tools = managed(profiles)
     on = {i for n in active for i in profiles[n].get("plugins", [])} & managed_plugins
@@ -245,10 +258,7 @@ def main():
 
     if not args.dry_run:
         if settings:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with open(target, "w", encoding="utf-8", newline="\n") as f:
-                json.dump(settings, f, indent=2, ensure_ascii=False)
-                f.write("\n")
+            write_atomic(target, settings)
         elif target.exists():
             target.unlink()
 
@@ -256,7 +266,7 @@ def main():
     if reset:
         print(f"Reset: profile entries removed, user settings apply.{dry}")
         print(f"File: {target}" + ("" if settings else " (deleted: nothing else in it)"))
-        print("Applies to the next session opened on this folder.")
+        print(APPLIES)
         return
 
     print(f"Profiles: {', '.join(sorted(active))}{dry}")
@@ -274,7 +284,29 @@ def main():
             market = plugin_id.split("@", 1)[-1]
             where = "known marketplace" if market in known else f"add: {sources.get(market, 'source unknown')}"
             print(f"  {plugin_id}  ({where})")
-    print("Applies to the next session opened on this folder.")
+    print(APPLIES)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("profiles", nargs="*", help="profile names, global except <names>, or reset")
+    parser.add_argument("--project", default=os.getcwd(), help="session folder (default: current)")
+    parser.add_argument("--config", default=str(CONFIG), help="profiles file")
+    parser.add_argument("--status", action="store_true", help="report the active profiles")
+    parser.add_argument("--dry-run", action="store_true", help="show the result, write nothing")
+    parser.add_argument("--hook", action="store_true", help="run as a SessionStart hook")
+    args = parser.parse_args()
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if args.hook:
+        hook(args.config)
+        return
+    try:
+        run(args)
+    except ConfigError as e:
+        print(e)
+        sys.exit(e.code)
 
 
 if __name__ == "__main__":

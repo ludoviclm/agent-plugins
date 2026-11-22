@@ -6,6 +6,8 @@ the project's local settings, and the next session starts lighter and sharper.
 
 It also **measures** how much of the skill listing each plugin takes, so you know what to cut.
 
+![One profile per project: skill listing size by profile, against a 30,000-character budget](docs/context-profile.png)
+
 ## The problem
 
 At session start, Claude Code sends the model a listing of every available skill: its name
@@ -16,14 +18,14 @@ skill without a description is a skill Claude no longer knows when to use.
   characters**: with 105 skills loaded, 43 were listed without a description. The budget is
   1% of the context window: `/context` showed the Skills line at 9.9k tokens, 1.0%, on a
   1M-token model. It varies with the model and the version.
-- It fills up fast. Skill counts and listing weight of a few public plugins (name +
-  description, counted on 2026-11-22):
+- It fills up fast. Skill counts and listing weight of a few public plugins (`plugin:name` +
+  description, counted on 2026-11-23):
 
   | Plugin | Skills | Characters |
   | --- | ---: | ---: |
-  | `databricks@claude-plugins-official` 0.2.28 | 34 | ~14,300 |
-  | `fabric-skills` from `microsoft/skills-for-fabric` | 27 | ~11,000 |
-  | Five Power BI plugins of `power-bi-agentic-development` 26.40.9 | 20 | ~9,300 |
+  | `databricks@claude-plugins-official` 0.2.28 | 34 | ~14,600 |
+  | `fabric-skills` from `microsoft/skills-for-fabric` | 27 | ~11,400 |
+  | Five Power BI plugins of `power-bi-agentic-development` 26.40.9 | 20 | ~9,600 |
 
   Add your own skills, team skills, the ones Claude writes for you, and the skills synced from
   claude.ai: the budget is gone.
@@ -58,7 +60,8 @@ Profiles are declared once in `~/.claude/context-profiles.json`:
 - `tools`: heavy tools the profile allows - a built-in tool such as `Artifact`, or
   `mcp__<server>` for every tool of an MCP server. Outside the profiles that list them, they
   are denied, which removes them from the context.
-- `basic` is always included. Profiles are cumulative: `pbi docs` loads both.
+- `basic` is always included. Profiles are cumulative: `pbi docs` loads both. Names are
+  case-insensitive.
 - `global` turns everything on; `global except databricks` turns everything on but `databricks`.
 - `reset` removes the profile entries from the folder: your user settings apply again.
 - `announce` (optional, top level): see "The session banner" below.
@@ -77,8 +80,9 @@ how heavy are my plugins?
 A small script, `apply.py`, does the switch in one step. It writes
 `enabledPlugins` and `permissions.deny` in `.claude/settings.local.json` of
 the folder the session was opened on, and leaves every other setting untouched. Claude Code
-asks you to approve the command the first time. **The profile applies to the
-next session opened on that folder.** Each folder keeps its own profile: your client's website
+asks you to approve the command the first time. **The plugins of a profile apply to the
+next session opened on that folder**; the tools may change in the current session already (see
+"What I learned building it"). Each folder keeps its own profile: your client's website
 does not inherit your data plugins.
 
 **The session banner.** The plugin ships a `SessionStart` hook that shows the profile of
@@ -130,9 +134,9 @@ python plugins/context-profile/skills/context-profile/scripts/measure.py --proje
 
 ```text
 Source                                        On   Skills    Chars  Budget
-databricks@claude-plugins-official            no       34   14,180     47%
+databricks@claude-plugins-official            no       34   14,554     49%
 claude.ai synced skills (a1b2c3d4)            ?        13    9,240     31%
-semantic-models@power-bi-agentic-development  yes       6    2,973     10%
+semantic-models@power-bi-agentic-development  yes       6    3,069     10%
 ...
 Enabled: 37 skills, 15,142 characters, 50% of a 30,000-character budget.
 ```
@@ -203,6 +207,11 @@ it by hand.
   outside the total. On Claude Code 2.1.302, denying eight MCP servers (about 119,000 tokens
   of deferred tools) left the session total unchanged, and the servers' instructions stayed.
   Denying a server is still useful to keep its tools out of reach.
+- **Tools follow a switch in the current session, plugins do not.** Claude Code reloads the
+  permission rules while the session runs, but loads plugins only at start. On Claude Code
+  2.1.330, switching from `web` to `global` made the `Artifact` tool available in the running
+  session right away, while the new plugins waited for the next one. The reverse, a tool denied
+  mid-session, was not tested.
 - **A `Skill(<name>)` deny rule does not hide a skill.** It blocks the call, but the skill
   stays in the listing. The granularity is the plugin, or the tool.
 
@@ -215,6 +224,8 @@ it by hand.
   banner stays silent; switching still works by hand.
 - Keep guardrail or security plugins out of the configuration: the skill only touches the
   plugins you list, so an unlisted plugin is never switched off.
+- A profile cannot allow a tool your user settings deny: deny rules of every scope add up.
+  The status then shows that profile as partial.
 
 ## Alternatives
 

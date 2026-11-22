@@ -21,6 +21,7 @@ profile of each session.
 | `plugins/context-profile/hooks/hooks.json` | `SessionStart` hook: the session banner, through `apply.py --hook` |
 | `.../scripts/measure.py` | Listing weight per plugin |
 | `README.md` | User documentation: problem, usage, install, customization, alternatives |
+| `docs/context-profile.png` | Illustration shown at the top of the README |
 
 ## Rules
 
