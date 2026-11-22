@@ -1,5 +1,9 @@
 # context-profile
 
+[![CI](https://img.shields.io/github/actions/workflow/status/ludoviclm/claude-context-profile/ci.yml?branch=main&logo=github&label=CI)](https://github.com/ludoviclm/claude-context-profile/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/ludoviclm/claude-context-profile)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.8%2B-blue)](#measuring)
+
 A Claude Code skill that switches **context profiles** per project: each folder loads only the
 plugins and heavy tools its work needs. You say "switch to the web profile", the skill writes
 the project's local settings, and the next session starts lighter and sharper.

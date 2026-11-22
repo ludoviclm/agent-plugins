@@ -22,6 +22,8 @@ profile of each session.
 | `.../scripts/measure.py` | Listing weight per plugin |
 | `README.md` | User documentation: problem, usage, install, customization, alternatives |
 | `docs/context-profile.png` | Illustration shown at the top of the README |
+| `tests/test_scripts.py` | End-to-end tests of both scripts, standard library `unittest` |
+| `.github/workflows/ci.yml` | CI: the tests on Linux, Windows and macOS; feeds the README badge |
 
 ## Rules
 
@@ -49,10 +51,9 @@ re-measure with `measure.py` rather than editing them by hand.
 ## Before a commit
 
 1. `claude plugin validate .` passes, without warnings.
-2. `apply.py <profile> --dry-run --project <test folder>` and `measure.py --project .` run
-   (from the skill folder).
-3. JSON files parse.
-4. Behaviour change: bump `version` in `plugin.json` (semantic versioning).
+2. `python -m unittest discover -s tests` passes (it also checks that the JSON files parse).
+   A behaviour change comes with its test.
+3. Behaviour change: bump `version` in `plugin.json` (semantic versioning).
 
 Test a change for real in a throwaway folder: add this repository as a local marketplace
 (`claude plugin marketplace add <path>`), install the plugin with `--scope local`, switch a
