@@ -1,6 +1,6 @@
 {
   "name": "context-profile",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Switch Claude Code context profiles per project: load only the plugins and tools the work needs, and measure the weight of each plugin in the skill listing.",
   "author": {
     "name": "Ludovic Le Menaheze",

@@ -115,7 +115,9 @@ only. No Python: say so, and point to `/context`, which remains the reference.
   personal and project skills one by one, not plugin skills.
 - **Save many tokens by cutting skills.** Above its budget, Claude Code drops descriptions;
   cutting a plugin mostly gives descriptions back to the other skills, so Claude picks the
-  right one more often. The large savings are heavy tools and MCP servers (`tools`).
+  right one more often. The large savings are heavy built-in tools such as `Artifact`.
+  MCP tools are deferred by default (loaded on demand): denying a server keeps it out of
+  reach, but saves little, and its instructions stay.
 - **Give two parallel sessions of the same folder two profiles at start.** They read the same
   file: open the second one after switching.
 

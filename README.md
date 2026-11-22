@@ -165,8 +165,9 @@ it by hand.
 - **Split a heavy plugin into its own profile**: the example keeps `fabric-skills` (27 skills,
   three MCP servers) apart from `pbi`, so Power BI work does not carry the whole of Fabric.
   Both plugins also ship a `semantic-model-authoring` skill: kept apart, it is listed once unless you load both.
-- **Cut a heavy tool or MCP server**: list it in the `tools` of the profile that needs it
-  (`Artifact`, or `mcp__<server>`). It is denied in every other profile.
+- **Cut a heavy tool**: list it in the `tools` of the profile that needs it (`Artifact`, or
+  `mcp__<server>`). It is denied in every other profile. Denying an MCP server saves little
+  today: see "What I learned building it".
 - **Keep something always on**: put it in `basic`.
 - **Keep something out of reach**: do not list it anywhere. A security or guardrail plugin
   listed in no profile is never switched off by the skill.
@@ -178,7 +179,12 @@ it by hand.
 - **Cutting a plugin saves few tokens, but gives descriptions back to the other skills.** The
   win is routing: Claude picks the right skill more often.
 - **The big token savings are tools, not skills.** On my setup, the `Artifact` tool alone
-  weighed about 13,000 tokens. MCP servers are the other heavy item: list them in `tools`.
+  weighed about 13,000 tokens.
+- **MCP servers weigh little, as long as their tools are deferred.** With tool search on (the
+  default), MCP tools are loaded on demand: `/context` shows them as "MCP tools (deferred)",
+  outside the total. On Claude Code 2.1.302, denying eight MCP servers (about 119,000 tokens
+  of deferred tools) left the session total unchanged, and the servers' instructions stayed.
+  Denying a server is still useful to keep its tools out of reach.
 - **A `Skill(<name>)` deny rule does not hide a skill.** It blocks the call, but the skill
   stays in the listing. The granularity is the plugin, or the tool.
 
