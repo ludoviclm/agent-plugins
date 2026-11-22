@@ -1,0 +1,14 @@
+{
+  "name": "context-profile",
+  "description": "Context profiles for Claude Code: load only the plugins and tools each project needs.",
+  "owner": {
+    "name": "ludoviclm"
+  },
+  "plugins": [
+    {
+      "name": "context-profile",
+      "source": "./plugins/context-profile",
+      "description": "Switch Claude Code context profiles per project: load only the plugins and tools the work needs, and measure the weight of each plugin in the skill listing."
+    }
+  ]
+}

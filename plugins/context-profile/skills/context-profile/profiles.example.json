@@ -1,0 +1,52 @@
+{
+  "marketplaces": {
+    "claude-plugins-official": "anthropics/claude-plugins-official",
+    "fabric-collection": "microsoft/skills-for-fabric"
+  },
+  "profiles": {
+    "basic": {
+      "description": "Always on: the minimum for every session. Every other managed plugin is off and every managed tool is denied.",
+      "plugins": [],
+      "tools": []
+    },
+    "pbi": {
+      "description": "Power BI: reports and semantic models, from Microsoft Skills for Fabric.",
+      "plugins": [
+        "powerbi-authoring@fabric-collection"
+      ]
+    },
+    "fabric": {
+      "description": "Microsoft Fabric workloads, from Microsoft Skills for Fabric: 27 skills and three MCP servers.",
+      "plugins": [
+        "fabric-skills@fabric-collection"
+      ]
+    },
+    "databricks": {
+      "description": "Databricks: Unity Catalog, jobs, pipelines, Genie, Asset Bundles.",
+      "plugins": [
+        "databricks@claude-plugins-official"
+      ]
+    },
+    "design": {
+      "description": "Design tools: Figma, Canva, Miro.",
+      "plugins": [
+        "figma@claude-plugins-official",
+        "canva@claude-plugins-official",
+        "miro@claude-plugins-official"
+      ]
+    },
+    "web": {
+      "description": "Static websites in plain HTML and CSS.",
+      "plugins": [
+        "frontend-design@claude-plugins-official",
+        "modern-web-guidance@claude-plugins-official"
+      ]
+    },
+    "docs": {
+      "description": "Writing sessions: allows the page tool, denied otherwise.",
+      "tools": [
+        "Artifact"
+      ]
+    }
+  }
+}
