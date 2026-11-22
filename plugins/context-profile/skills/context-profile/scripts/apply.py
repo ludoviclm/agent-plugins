@@ -76,9 +76,25 @@ def installed_ids(project):
     return ids
 
 
-def status(profiles, settings):
-    enabled = settings.get("enabledPlugins", {})
-    deny = set(settings.get("permissions", {}).get("deny", []))
+def effective(project):
+    """Merge user, project and local settings the way Claude Code does: the later scope wins
+    for a plugin, deny rules add up. Without it, a folder with no local file reads as basic
+    while the user settings may turn everything on."""
+    enabled, deny = {}, set()
+    for path in (CLAUDE_HOME / "settings.json",
+                 project / ".claude" / "settings.json",
+                 project / ".claude" / "settings.local.json"):
+        try:
+            s = load_json(path)
+        except ValueError as e:
+            fail(2, f"Invalid JSON in {path}: {e}")
+        enabled.update(s.get("enabledPlugins", {}))
+        deny |= set(s.get("permissions", {}).get("deny", []))
+    return enabled, deny
+
+
+def status(profiles, project):
+    enabled, deny = effective(project)
     active = [
         name for name, p in profiles.items()
         if name != "basic" and (p.get("plugins") or p.get("tools"))
@@ -118,7 +134,7 @@ def main():
         fail(2, f"Invalid JSON in {target}, left untouched: {e}")
 
     if args.status or not args.profiles:
-        status(profiles, settings)
+        status(profiles, project)
         return
 
     active, _ = resolve(profiles, args.profiles)
