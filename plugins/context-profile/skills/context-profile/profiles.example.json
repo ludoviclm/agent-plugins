@@ -1,4 +1,5 @@
 {
+  "announce": false,
   "marketplaces": {
     "claude-plugins-official": "anthropics/claude-plugins-official",
     "fabric-collection": "microsoft/skills-for-fabric"

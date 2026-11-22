@@ -1,6 +1,6 @@
 ---
 name: context-profile
-description: Switches the context profile of the current Claude Code project - which plugins are enabled and which heavy tools are denied - by writing `.claude/settings.local.json`, so the next session loads only what the work needs, and installs a profile's missing plugins once the user agrees. Also measures how much of the skill listing budget each plugin takes. Invoke when the user asks to switch, combine, show or create a profile ("switch to the web profile", "enable pbi and databricks", "global except design", "which profile is active?"), to load or unload a plugin for this project only, or asks why skills lose their descriptions or which plugins are the heaviest.
+description: Switches the context profile of the current Claude Code project - which plugins are enabled and which heavy tools are denied - by writing `.claude/settings.local.json`, so the next session loads only what the work needs, and installs a profile's missing plugins once the user agrees. Also measures how much of the skill listing budget each plugin takes. Invoke when the user asks to switch, combine, reset, show or create a profile ("switch to the web profile", "enable pbi and databricks", "global except design", "which profile is active?"), to load or unload a plugin for this project only, or asks why skills lose their descriptions or which plugins are the heaviest.
 ---
 
 # Context profiles
@@ -51,6 +51,8 @@ list: a guardrail plugin must stay out of reach of a profile switch.
 ## Requesting profiles
 
 - Profiles are cumulative: `pbi docs` loads the union of both, plus `basic`.
+- `reset` removes the managed entries from the folder's file, alone, never with a profile
+  name: the user settings apply again. The file is deleted if nothing else is left in it.
 - `global except design` (or `global except <p> <p>...`) loads every profile but the excluded
   ones. `except` only follows `global` and never excludes `basic`.
 
@@ -67,7 +69,10 @@ python <skill-dir>/scripts/apply.py <profiles> --project <primary working direct
   `global except design`.
 - `--project`: the session's primary working directory, the folder the session was opened
   on. Never another folder: Claude Code does not load the settings of additional directories.
-- `--status` instead of profiles: reports the active profiles ("which profile is active?").
+- `--status` instead of profiles: reports the active profiles ("which profile is active?"),
+  from the user, project and local settings merged. It flags a partial profile
+  (`pbi (partial 7/8)`), a plugin on but not installed, `global` when every profile is on, and
+  a folder with no profile of its own.
 - `--dry-run`: shows the result without writing ("what would the web profile change?").
 
 The script writes `enabledPlugins` and `permissions.deny` in `.claude/settings.local.json`,
@@ -94,7 +99,17 @@ Refused, or an install fails: say the plugin will not load until installed.
 `.claude/settings.local.json`; set every plugin listed in a profile to `true` if an active
 profile lists it, `false` otherwise (never the plugin that ships this skill); in
 `permissions.deny`, remove every tool listed in a profile, then add back those no active
-profile allows; keep every other key. Claude Code asks the user to approve the write.
+profile allows; keep every other key. For `reset`, remove those entries instead of writing
+them. Claude Code asks the user to approve the write.
+
+## The session banner
+
+The plugin ships a `SessionStart` hook, `apply.py --hook`, that shows `Context profile: ...`
+at the start of each session, from the same merge as `--status`. It is silent without a
+configuration file. With `"announce": true` at the top level of the configuration, it also
+asks Claude to state the profile in its first reply, for clients that do not display hook
+messages. A banner in the context reflects the session start: for the current state of the
+file, run `--status`.
 
 ## Measuring the skill listing
 

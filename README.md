@@ -60,6 +60,8 @@ Profiles are declared once in `~/.claude/context-profiles.json`:
   are denied, which removes them from the context.
 - `basic` is always included. Profiles are cumulative: `pbi docs` loads both.
 - `global` turns everything on; `global except databricks` turns everything on but `databricks`.
+- `reset` removes the profile entries from the folder: your user settings apply again.
+- `announce` (optional, top level): see "The session banner" below.
 
 Then, in any session:
 
@@ -67,6 +69,7 @@ Then, in any session:
 switch to the web profile
 enable pbi and databricks
 global except design
+reset the profile of this folder
 which profile is active?
 how heavy are my plugins?
 ```
@@ -77,6 +80,21 @@ the folder the session was opened on, and leaves every other setting untouched. 
 asks you to approve the command the first time. **The profile applies to the
 next session opened on that folder.** Each folder keeps its own profile: your client's website
 does not inherit your data plugins.
+
+**The session banner.** The plugin ships a `SessionStart` hook that shows the profile of
+each new session: `Context profile: basic + web`. It merges your user, project and local
+settings, and flags what does not match a profile exactly:
+
+```text
+Context profile: basic + pbi (partial 7/8) + docs
+Context profile: basic + web (not installed: modern-web-guidance)
+Context profile: global
+Context profile: basic + pbi (no profile set in this folder: user settings apply)
+```
+
+The hook is silent when you have no configuration file. The VS Code extension records the
+message without displaying it: set `"announce": true` at the top level of the configuration,
+and Claude states the profile in its first reply instead.
 
 **Missing plugins are installed on request.** When a profile names a plugin you do not have,
 the skill lists it with its marketplace and asks before installing anything: a plugin is
@@ -193,6 +211,8 @@ it by hand.
 - Claude Code only (CLI, desktop app, IDE extensions), not the claude.ai chat.
 - No per-skill granularity inside a plugin.
 - Two sessions opened on the same folder share the same file: switch, then open the second.
+- The banner needs Python 3.8+ on the `PATH`, as `python3` or `python`. Without it, the
+  banner stays silent; switching still works by hand.
 - Keep guardrail or security plugins out of the configuration: the skill only touches the
   plugins you list, so an unlisted plugin is never switched off.
 

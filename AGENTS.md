@@ -8,7 +8,8 @@ Read by Claude Code through `CLAUDE.md`, which only imports this file, and by ot
 A Claude Code plugin that ships one skill, `context-profile`, and the marketplace that
 distributes it. The skill switches per-project context profiles (enabled plugins, denied
 tools) in `.claude/settings.local.json`, installs a profile's missing plugins on approval,
-and measures each plugin's weight in the skill listing.
+and measures each plugin's weight in the skill listing. A `SessionStart` hook shows the
+profile of each session.
 
 | Path | Role |
 | --- | --- |
@@ -16,7 +17,8 @@ and measures each plugin's weight in the skill listing.
 | `plugins/context-profile/.claude-plugin/plugin.json` | Plugin manifest: name, version, author |
 | `plugins/context-profile/skills/context-profile/SKILL.md` | The skill: the behaviour Claude follows |
 | `.../profiles.example.json` | Example configuration, copied to `~/.claude/context-profiles.json` |
-| `.../scripts/apply.py` | Applies profiles to `.claude/settings.local.json`; the skill's fast path |
+| `.../scripts/apply.py` | Applies profiles to `.claude/settings.local.json`; the skill's fast path; `--hook` for the banner |
+| `plugins/context-profile/hooks/hooks.json` | `SessionStart` hook: the session banner, through `apply.py --hook` |
 | `.../scripts/measure.py` | Listing weight per plugin |
 | `README.md` | User documentation: problem, usage, install, customization, alternatives |
 
