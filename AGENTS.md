@@ -16,7 +16,8 @@ and measures each plugin's weight in the skill listing.
 | `plugins/context-profile/.claude-plugin/plugin.json` | Plugin manifest: name, version, author |
 | `plugins/context-profile/skills/context-profile/SKILL.md` | The skill: the behaviour Claude follows |
 | `.../profiles.example.json` | Example configuration, copied to `~/.claude/context-profiles.json` |
-| `.../scripts/measure.py` | Listing weight per plugin; Python 3.8+, standard library only |
+| `.../scripts/apply.py` | Applies profiles to `.claude/settings.local.json`; the skill's fast path |
+| `.../scripts/measure.py` | Listing weight per plugin |
 | `README.md` | User documentation: problem, usage, install, customization, alternatives |
 
 ## Rules
@@ -29,14 +30,14 @@ and measures each plugin's weight in the skill listing.
   profiles. Never add behaviour that touches an unlisted plugin, the plugin that ships the
   skill, or the user scope (`~/.claude/settings.json`).
 - **Installing is always approved by the user**, at the local scope.
-- **`measure.py` stays dependency-free** and cross-platform (Windows, macOS, Linux). Comments
+- **The scripts stay dependency-free** (Python 3.8+ standard library) and cross-platform (Windows, macOS, Linux). Comments
   explain the non-obvious parts only.
 - **Plain hyphens**, no em dash, in all prose.
 
 ## Keeping things in sync
 
 A change to the profile format, the requests the skill understands, or its limits goes in
-`SKILL.md` **and** `README.md` (sections "How it works", "Customizing the skill", "Limits").
+`apply.py`, `SKILL.md` (including its no-Python fallback) **and** `README.md` (sections "How it works", "Customizing the skill", "Limits").
 A change to the example profiles goes in `profiles.example.json` and the README tables.
 
 Figures quoted in the README (skill counts, characters, budget) carry their date and version:
@@ -45,7 +46,8 @@ re-measure with `measure.py` rather than editing them by hand.
 ## Before a commit
 
 1. `claude plugin validate .` passes, without warnings.
-2. `python scripts/measure.py --project .` runs (from the skill folder).
+2. `apply.py <profile> --dry-run --project <test folder>` and `measure.py --project .` run
+   (from the skill folder).
 3. JSON files parse.
 4. Behaviour change: bump `version` in `plugin.json` (semantic versioning).
 

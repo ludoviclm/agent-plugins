@@ -13,8 +13,9 @@ and description. That listing has a budget. Above it, Claude Code drops descript
 skill without a description is a skill Claude no longer knows when to use.
 
 - On Claude Code 2.1.302 (November 2026), the ceiling observed was about **30,000
-  characters**: with 105 skills loaded, 43 were listed without a description. The budget
-  reportedly defaults to 1% of the context window, so it varies with the model and version.
+  characters**: with 105 skills loaded, 43 were listed without a description. The budget is
+  1% of the context window: `/context` showed the Skills line at 9.9k tokens, 1.0%, on a
+  1M-token model. It varies with the model and the version.
 - It fills up fast. Skill counts and listing weight of a few public plugins (name +
   description, counted on 2026-11-22):
 
@@ -70,9 +71,10 @@ which profile is active?
 how heavy are my plugins?
 ```
 
-The skill writes `enabledPlugins` and `permissions.deny` in `.claude/settings.local.json` of
+A small script, `apply.py`, does the switch in one step. It writes
+`enabledPlugins` and `permissions.deny` in `.claude/settings.local.json` of
 the folder the session was opened on, and leaves every other setting untouched. Claude Code
-asks you to approve the write, as for any change to its settings. **The profile applies to the
+asks you to approve the command the first time. **The profile applies to the
 next session opened on that folder.** Each folder keeps its own profile: your client's website
 does not inherit your data plugins.
 

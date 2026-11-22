@@ -51,43 +51,50 @@ list: a guardrail plugin must stay out of reach of a profile switch.
 ## Requesting profiles
 
 - Profiles are cumulative: `pbi docs` loads the union of both, plus `basic`.
-- `global except design` (or `global except <p> <p>...`) turns everything on, except what the
-  excluded profiles turn on. `except` only follows `global` and never excludes `basic`.
+- `global except design` (or `global except <p> <p>...`) loads every profile but the excluded
+  ones. `except` only follows `global` and never excludes `basic`.
 
 ## Applying a profile
 
-1. **Check the names** against the configuration. An unknown profile: stop, list the valid
-   ones with their description, write nothing.
-2. **Missing plugins.** Compare the plugins the request turns on with `claude plugin list`.
-   For each missing one, check that its marketplace is known (`claude plugin marketplace
-   list`); if not, take its source from `marketplaces`, or ask the user for it. Show the list
-   - plugin, marketplace, source - and **ask once for approval: installing runs third-party
-   code**. On approval, from the session's folder:
-   - `claude plugin marketplace add <source>` for each unknown marketplace;
-   - `claude plugin install <plugin>@<marketplace> --scope local` for each plugin. The local
-     scope installs it for this folder only: the user scope would turn it on everywhere,
-     which defeats the profiles.
+**Run `scripts/apply.py` in one call, and nothing before it** - no reading of the
+configuration or the settings first: the script does the whole job, fast.
 
-   Refused, or an install fails: carry on, the plugin stays listed as missing in step 7.
-3. **Target file**: `.claude/settings.local.json` of the session's primary working directory,
-   the folder the session was opened on. Never another folder: Claude Code does not load the
-   settings of additional directories. Claude Code normally keeps this file out of Git.
-4. **Read the file if it exists, and keep every key this skill does not manage.** Read it
-   after step 2: an install writes its own entry there.
-5. For each managed plugin, set `enabledPlugins.<id>` to `true` if an active profile turns it
-   on (and, after `global except`, no excluded profile does), `false` otherwise.
-6. In `permissions.deny`, remove every managed tool, then add back each one no active profile
-   allows. Leave every other rule in place.
-7. **Warn** about any plugin set to `true` that is still not installed: it will not load.
-8. Write the file - Claude Code asks the user to approve any write to its settings files,
-   which is expected: if the write is refused, show the content to paste instead. Then show
-   the resulting `enabledPlugins` and `permissions.deny`, and say: **the profile applies to
-   the next session opened on this folder**; the current one keeps what it loaded.
-   `/context` in the new session shows the result.
+```bash
+python <skill-dir>/scripts/apply.py <profiles> --project <primary working directory>
+```
 
-**No profile named** ("which profile is active?"): read the file and report the profiles whose
-plugins are all `true`, and the managed tools denied. No file means the user settings apply
-everywhere.
+- `<profiles>`: the user's words as profile names, e.g. `web`, `pbi docs`,
+  `global except design`.
+- `--project`: the session's primary working directory, the folder the session was opened
+  on. Never another folder: Claude Code does not load the settings of additional directories.
+- `--status` instead of profiles: reports the active profiles ("which profile is active?").
+- `--dry-run`: shows the result without writing ("what would the web profile change?").
+
+The script writes `enabledPlugins` and `permissions.deny` in `.claude/settings.local.json`,
+for the plugins and tools listed in the profiles only, keeps every other key, never touches
+the plugin that ships this skill, and prints a summary. Exit code 3: unknown profile, the
+output lists the valid ones; exit code 2: configuration problem, the output says which.
+
+**Then relay the summary briefly**, and say: **the profile applies to the next session opened
+on this folder**; the current one keeps what it loaded. `/context` in the new session shows
+the result.
+
+**Missing plugins** - the summary lists them under "Not installed", with their marketplace
+when it is unknown. Ask once for approval, **installing runs third-party code**, then, from
+the session's folder:
+- `claude plugin marketplace add <source>` for each marketplace marked `add:`; when the source
+  is unknown, ask the user for it;
+- `claude plugin install <plugin>@<marketplace> --scope local` for each plugin. The local scope
+  installs it for this folder only: the user scope would turn it on everywhere, which defeats
+  the profiles. The install also enables it in the same file: no need to rerun the script.
+
+Refused, or an install fails: say the plugin will not load until installed.
+
+**No Python**: apply the same rules by hand. Read the configuration and
+`.claude/settings.local.json`; set every plugin listed in a profile to `true` if an active
+profile lists it, `false` otherwise (never the plugin that ships this skill); in
+`permissions.deny`, remove every tool listed in a profile, then add back those no active
+profile allows; keep every other key. Claude Code asks the user to approve the write.
 
 ## Measuring the skill listing
 
