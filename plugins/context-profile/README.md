@@ -7,16 +7,7 @@
 **Load only the Claude Code plugins each project needs.** Say which profile you want, in plain
 language, from inside the session:
 
-```text
-> switch to the web profile
-
-Profiles: basic, web
-File: ~/projects/my-site/.claude/settings.local.json
-On:  frontend-design@claude-plugins-official, modern-web-guidance@claude-plugins-official
-Off: databricks@claude-plugins-official, fabric-skills@fabric-collection, powerbi-authoring@fabric-collection, ...
-Denied tools: Artifact
-Plugins apply to the next session opened on this folder; tools may change in this session already.
-```
+![A Claude Code session: "switch to the web profile" turns the web plugins on, the data plugins off, and denies the Artifact tool](../../docs/context-profile-session.png)
 
 The next session opened on that folder starts lighter, and says so:
 
@@ -28,6 +19,33 @@ Why it matters: Claude Code lists every skill to the model within a fixed budget
 descriptions are dropped, and Claude no longer knows when to use those skills. Each profile
 keeps a folder under budget, and the skill **measures** how much each plugin takes, so you
 know what to cut.
+
+## The problem
+
+![One profile per project: skill listing size by profile, against a 30,000-character budget](../../docs/context-profile.png)
+
+At session start, Claude Code sends the model a listing of every available skill: its name
+and description. That listing has a budget. Above it, Claude Code drops descriptions, and a
+skill without a description is a skill Claude no longer knows when to use.
+
+- On Claude Code 2.1.302 (November 2026), the ceiling observed was about **30,000
+  characters**: with 105 skills loaded, 43 were listed without a description. The budget is
+  1% of the context window: `/context` showed the Skills line at 9.9k tokens, 1.0%, on a
+  1M-token model. It varies with the model and the version.
+- It fills up fast. Skill counts and listing weight of a few public plugins (`plugin:name` +
+  description, counted on 2026-11-23):
+
+  | Plugin | Skills | Characters |
+  | --- | ---: | ---: |
+  | `databricks@claude-plugins-official` 0.2.28 | 34 | ~14,600 |
+  | `fabric-skills` from `microsoft/skills-for-fabric` | 27 | ~11,400 |
+  | Five Power BI plugins of `power-bi-agentic-development` 26.40.9 | 20 | ~9,600 |
+
+  Add your own skills, team skills, the ones Claude writes for you, and the skills synced from
+  claude.ai: the budget is gone.
+
+If your work moves between topics in the same week - a data platform in the morning, a
+website in the evening, a document on Friday - you do not need all of it in every session.
 
 ## Quick start
 
@@ -58,33 +76,6 @@ above. Your `~/.claude/context-profiles.json` does not change.
 Without the plugin system: copy `skills/context-profile/` to `~/.claude/skills/context-profile/`
 to make it a personal skill. You get the switch and the measure, not the session banner,
 which is a plugin hook.
-
-## The problem
-
-![One profile per project: skill listing size by profile, against a 30,000-character budget](../../docs/context-profile.png)
-
-At session start, Claude Code sends the model a listing of every available skill: its name
-and description. That listing has a budget. Above it, Claude Code drops descriptions, and a
-skill without a description is a skill Claude no longer knows when to use.
-
-- On Claude Code 2.1.302 (November 2026), the ceiling observed was about **30,000
-  characters**: with 105 skills loaded, 43 were listed without a description. The budget is
-  1% of the context window: `/context` showed the Skills line at 9.9k tokens, 1.0%, on a
-  1M-token model. It varies with the model and the version.
-- It fills up fast. Skill counts and listing weight of a few public plugins (`plugin:name` +
-  description, counted on 2026-11-23):
-
-  | Plugin | Skills | Characters |
-  | --- | ---: | ---: |
-  | `databricks@claude-plugins-official` 0.2.28 | 34 | ~14,600 |
-  | `fabric-skills` from `microsoft/skills-for-fabric` | 27 | ~11,400 |
-  | Five Power BI plugins of `power-bi-agentic-development` 26.40.9 | 20 | ~9,600 |
-
-  Add your own skills, team skills, the ones Claude writes for you, and the skills synced from
-  claude.ai: the budget is gone.
-
-If your work moves between topics in the same week - a data platform in the morning, a
-website in the evening, a document on Friday - you do not need all of it in every session.
 
 ## How it works
 
