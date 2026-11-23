@@ -125,10 +125,11 @@ how heavy are my plugins?
 A small script, `apply.py`, does the switch in one step. It writes
 `enabledPlugins` and `permissions.deny` in `.claude/settings.local.json` of
 the folder the session was opened on, and leaves every other setting untouched. Claude Code
-asks you to approve the command the first time. **The plugins of a profile load when the
-session restarts on that folder**, and the restart can keep the conversation: "Developer:
-Reload Window" in VS Code, or quit and `claude --continue` in a terminal. The tools may change
-in the current session already (see "What I learned building it"). Each folder keeps its own profile: your client's website
+asks you to approve the command the first time. **The plugins and the denied tools of a
+profile apply when the session restarts on that folder**, and the restart keeps the
+conversation: "Developer: Reload Window" in VS Code, or quit and `claude --continue` in a
+terminal. Only a newly allowed tool may appear right away (see "What I learned building it").
+Each folder keeps its own profile: your client's website
 does not inherit your data plugins.
 
 **The session banner.** The plugin ships a `SessionStart` hook that shows the profile of
@@ -236,15 +237,21 @@ it by hand.
   outside the total. On Claude Code 2.1.302, denying eight MCP servers (about 119,000 tokens
   of deferred tools) left the session total unchanged, and the servers' instructions stayed.
   Denying a server is still useful to keep its tools out of reach.
-- **Tools follow a switch in the current session, plugins do not.** Claude Code reloads the
-  permission rules while the session runs, but loads plugins only at start. On Claude Code
-  2.1.330, switching from `web` to `global` made the `Artifact` tool available in the running
-  session right away, while the new plugins waited for the next one. The reverse, a tool denied
-  mid-session, was not tested.
-- **A resumed session loads the new plugins and keeps the conversation.** On Claude Code
-  2.1.302, a session opened on `basic`, then resumed (`claude --resume <id>`) after a switch
-  to `databricks`, kept its id and history and came back with the 34 `databricks` skills.
-  Reloading the VS Code window restarts the extension's Claude Code process the same way.
+- **An allowed tool appears at once; a denied tool and the plugins wait for a restart.** Claude
+  Code reloads the permission rules while the session runs, but loads plugins and builds the
+  tool list at start. On Claude Code 2.1.330, switching from `web` to `global` made the
+  `Artifact` tool available in the running session right away. The reverse, on 2.1.302: after
+  a switch from `global` to `pbi`, `/context` still counted 21.4k tokens of system tools; after
+  a restart, 9.3k - the `Artifact` tool alone was about 12,000 tokens.
+- **A restart keeps the conversation.** On Claude Code 2.1.302, a session opened on `basic`,
+  then resumed (`claude --resume <id>`) after a switch to `databricks`, kept its id and history
+  and came back with the 34 `databricks` skills. In the VS Code extension, "Developer: Reload
+  Window" did the same: same conversation, new profile announced by the banner, the denied
+  tool gone from `/context`.
+- **`/context` can hide the gain on skills.** Its Skills line stops at the listing budget: on a
+  1M-token model it read 10.0k tokens both before and after a switch from `global` to `pbi`,
+  because the skills synced from claude.ai and the built-in ones kept the listing at the
+  ceiling. The measure, or the per-skill detail of `/context`, shows what changed.
 - **A `Skill(<name>)` deny rule does not hide a skill.** It blocks the call, but the skill
   stays in the listing. The granularity is the plugin, or the tool.
 

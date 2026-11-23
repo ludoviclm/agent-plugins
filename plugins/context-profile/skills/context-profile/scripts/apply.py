@@ -26,8 +26,8 @@ CONFIG = CLAUDE_HOME / "context-profiles.json"
 # The plugin that ships this skill: never switched by a profile.
 SELF_PLUGIN = "context-profile@"
 RESERVED = ("global", "except", "reset")
-APPLIES = ("Plugins load when the session restarts: reload the window (VS Code) or run"
-           " `claude --continue` to keep the conversation; tools may change in this session already.")
+APPLIES = ("Plugins and denied tools apply when the session restarts: reload the window (VS Code)"
+           " or run `claude --continue` to keep the conversation. An allowed tool may appear right away.")
 
 
 class ConfigError(Exception):
