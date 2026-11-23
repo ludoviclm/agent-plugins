@@ -44,14 +44,16 @@
       ]
     },
     "docs": {
-      "description": "Writing sessions: allows the page tool and the Office skills, off otherwise.",
+      "description": "Writing sessions: allows the page tool, the Office and PDF skills and the Claude Docs skill, off otherwise.",
       "tools": [
         "Artifact"
       ],
       "skills": [
         "anthropic-skills:docx",
         "anthropic-skills:pptx",
-        "anthropic-skills:xlsx"
+        "anthropic-skills:xlsx",
+        "anthropic-skills:pdf",
+        "anthropic-skills:docs"
       ]
     }
   }

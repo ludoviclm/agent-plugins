@@ -172,7 +172,7 @@ has seven profiles, all from public marketplaces:
 | `databricks` | `databricks` (Anthropic official marketplace) |
 | `design` | `figma`, `canva`, `miro` |
 | `web` | `frontend-design`, `modern-web-guidance` |
-| `docs` | no plugin: allows the `Artifact` page tool and the `docx`, `pptx`, `xlsx` skills synced from claude.ai, off elsewhere |
+| `docs` | no plugin: allows the `Artifact` page tool and the `docx`, `pptx`, `xlsx`, `pdf` and `docs` skills synced from claude.ai, off elsewhere |
 
 ## Measuring
 
