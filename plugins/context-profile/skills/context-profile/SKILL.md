@@ -83,10 +83,12 @@ for the plugins and tools listed in the profiles only, keeps every other key, ne
 the plugin that ships this skill, and prints a summary. Exit code 3: unknown profile, the
 output lists the valid ones; exit code 2: configuration problem, the output says which.
 
-**Then relay the summary briefly**, and say: **the plugins of the profile apply to the next
-session opened on this folder**; the current one keeps the plugins it loaded, but its tools
-may already follow the switch (Claude Code reloads permission rules during a session).
-`/context` in the new session shows the result.
+**Then relay the summary briefly**, and say: **the plugins of the profile load when the
+session restarts on this folder**, and a restart can keep the conversation: in VS Code,
+"Developer: Reload Window" resumes it; in a terminal, quit and run `claude --continue`. Until
+then the session keeps the plugins it loaded, but its tools may already follow the switch
+(Claude Code reloads permission rules during a session). `/context` after the restart shows
+the result.
 
 **Missing plugins** - the summary lists them under "Not installed", with their marketplace
 when it is unknown. Ask once for approval, **installing runs third-party code**, then, from
