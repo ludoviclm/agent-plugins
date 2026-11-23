@@ -31,6 +31,8 @@
   .before { color: #6f6b85; font-weight: 700; }
   .after { color: var(--series-1); font-weight: 700; }
   svg.overlay { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .own { margin-top: 22px; font: 700 34px "Ink Free", "Segoe Print", "Comic Sans MS", cursive; color: var(--series-1); }
+  .own span { margin-left: 16px; font: 400 18px "Cascadia Code", Consolas, monospace; color: var(--text-secondary); }
 </style></head>
 <body><div class="page">
   <div class="eyebrow">Claude Code &middot; context-profile plugin</div>
@@ -55,6 +57,7 @@
       </div>
     </div>
   </div>
+  <div class="own">Make your own profiles.<span>pbi &middot; databricks &middot; docs &middot; design &middot; &hellip;</span></div>
 </div>
 <div class="note before" id="n-before">Before: global<small>every plugin loaded</small></div>
 <div class="note after" id="n-after">After: web<small>only the web plugins</small></div>
