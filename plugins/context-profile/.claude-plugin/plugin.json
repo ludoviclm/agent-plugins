@@ -1,6 +1,6 @@
 {
   "name": "context-profile",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Switch Claude Code context profiles per project: load only the plugins and tools the work needs, and measure the weight of each plugin in the skill listing.",
   "author": {
     "name": "Ludovic Le Menaheze",
@@ -13,5 +13,5 @@
     "skills",
     "plugins"
   ],
-  "homepage": "https://github.com/ludoviclm/claude-context-profile"
+  "homepage": "https://github.com/ludoviclm/agent-plugins/tree/main/plugins/context-profile"
 }

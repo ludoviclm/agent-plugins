@@ -1,6 +1,6 @@
 {
-  "name": "context-profile",
-  "description": "Context profiles for Claude Code: load only the plugins and tools each project needs.",
+  "name": "ludoviclm",
+  "description": "Agent plugins by ludoviclm, for Claude Code and other agent harnesses. Each plugin states the harnesses it supports.",
   "owner": {
     "name": "ludoviclm"
   },
