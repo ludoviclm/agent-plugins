@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>context-profile - skill listing size by profile</title>
+<style>
+  :root {
+    --surface-1: #faf8f3;
+    --text-primary: #141414;
+    --text-secondary: #52514e;
+    --text-muted: #85837d;
+    --grid: #e2dfd7;
+    --series-1: #6250d6;   /* listing under the budget */
+    --critical: #d03b3b;   /* part over the budget (status, always labelled) */
+    --term-bg: #1e1b2e;
+    --term-text: #f0efec;
+    --term-muted: #9d99b3;
+  }
+  html, body { margin: 0; background: var(--surface-1); }
+  body { width: 1200px; height: 1500px; font-family: "Segoe UI", system-ui, sans-serif; }
+  svg { display: block; }
+  .mono { font-family: "Cascadia Code", Consolas, monospace; }
+</style>
+</head>
+<body>
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" role="img" aria-labelledby="t d">
+  <title id="t">One profile per project</title>
+  <desc id="d">Skill listing size by context profile, in characters from plugin skills, against a
+    budget of about 30,000 characters: global about 41,000, over the budget; pbi and databricks
+    about 30,000, the whole budget; pbi about 16,000, half; web about 6,000.</desc>
+
+  <!-- Header -->
+  <text x="80" y="110" fill="var(--text-muted)" font-size="26" font-weight="600"
+        letter-spacing="3">CLAUDE CODE · CONTEXT-PROFILE PLUGIN</text>
+  <text x="80" y="200" fill="var(--text-primary)" font-size="72" font-weight="700">One profile per project.</text>
+  <text x="80" y="268" fill="var(--text-secondary)" font-size="34">Load only the skills the work needs,</text>
+  <text x="80" y="312" fill="var(--text-secondary)" font-size="34">so Claude picks the right one more often.</text>
+
+  <!-- The skill in action: what you type, what the next session shows -->
+  <rect x="80" y="360" width="1040" height="170" rx="16" fill="var(--term-bg)"/>
+  <text x="120" y="430" class="mono" font-size="30">
+    <tspan fill="var(--term-muted)">›</tspan>
+    <tspan fill="var(--term-text)" dx="8">switch to the web profile</tspan>
+  </text>
+  <text x="120" y="490" class="mono" font-size="30">
+    <tspan fill="var(--term-muted)">next session →</tspan>
+    <tspan fill="var(--term-text)" dx="8">only web plugins are enabled</tspan>
+  </text>
+
+  <!-- Chart: 0 at x=80, 42,000 characters at x=1120 (1040 px / 42,000) -->
+  <text x="80" y="610" fill="var(--text-primary)" font-size="34" font-weight="700">Skill listing size by profile</text>
+  <text x="80" y="648" fill="var(--text-secondary)" font-size="26">characters from plugin skills</text>
+
+  <line x1="80" y1="715" x2="80" y2="1310" stroke="var(--grid)" stroke-width="2"/>
+  <!-- Budget: 30,000 characters -> x = 80 + 30000 * 1040 / 42000 = 822.9 -->
+  <line x1="822.9" y1="715" x2="822.9" y2="1310" stroke="var(--text-secondary)"
+        stroke-width="3" stroke-dasharray="10 8"/>
+  <text x="822.9" y="700" text-anchor="middle" fill="var(--text-primary)" font-size="26"
+        font-weight="600">Budget ≈ 30,000 (1% of context)</text>
+
+  <!-- Rows every 150 px: command, figure, bar (44 px) -->
+
+  <!-- global: 41,300 -> 1102.7; violet up to the budget, red beyond, 2 px surface gap at the line -->
+  <text x="80" y="760" class="mono" fill="var(--text-primary)" font-size="30">load global<tspan
+        font-family="Segoe UI, system-ui, sans-serif" fill="var(--text-secondary)" font-size="28"> (every plugin)</tspan></text>
+  <text x="80" y="796" fill="var(--text-secondary)" font-size="26">~41,000 · over the budget, descriptions dropped</text>
+  <rect x="80" y="812" width="740.9" height="44" fill="var(--series-1)"/>
+  <path d="M824.9 812 H1098.7 a4 4 0 0 1 4 4 V852 a4 4 0 0 1 -4 4 H824.9 Z" fill="var(--critical)"/>
+  <text x="963.8" y="843" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="600">+11,000 over</text>
+
+  <!-- pbi + databricks: 30,000 -> 822.9 -->
+  <text x="80" y="910" class="mono" fill="var(--text-primary)" font-size="30">enable pbi and databricks</text>
+  <text x="80" y="946" fill="var(--text-secondary)" font-size="26">~30,000 · the whole budget</text>
+  <path d="M80 962 H818.9 a4 4 0 0 1 4 4 V1002 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
+
+  <!-- pbi: 15,800 -> 471.2 -->
+  <text x="80" y="1060" class="mono" fill="var(--text-primary)" font-size="30">enable pbi</text>
+  <text x="80" y="1096" fill="var(--text-secondary)" font-size="26">~16,000 · half the budget</text>
+  <path d="M80 1112 H467.2 a4 4 0 0 1 4 4 V1152 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
+
+  <!-- web: 6,400 -> 238.5 -->
+  <text x="80" y="1210" class="mono" fill="var(--text-primary)" font-size="30">switch to web</text>
+  <text x="80" y="1246" fill="var(--text-secondary)" font-size="26">~6,000 · a fifth of the budget</text>
+  <path d="M80 1262 H234.5 a4 4 0 0 1 4 4 V1302 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
+
+  <!-- Footer -->
+  <line x1="80" y1="1365" x2="1120" y2="1365" stroke="var(--grid)" stroke-width="2"/>
+  <text x="80" y="1418" fill="var(--text-primary)" font-size="30" font-weight="700">context-profile<tspan
+        fill="var(--text-secondary)" font-weight="400"> · github.com/ludoviclm/agent-plugins · MIT</tspan></text>
+  <text x="80" y="1460" fill="var(--text-muted)" font-size="22">Measured with measure.py · Claude Code 2.1.302 · 1M-token model · Nov 2026</text>
+</svg>
+</body>
+</html>

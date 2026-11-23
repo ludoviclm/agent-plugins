@@ -1,0 +1,88 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  /* Same tokens as docs/context-profile.png */
+  :root { --surface-1: #faf8f3; --text-primary: #141414; --text-secondary: #52514e; --text-muted: #85837d;
+          --series-1: #6250d6; --term-bg: #1e1b2e; --term-text: #f0efec; --term-muted: #9d99b3; }
+  html, body { margin: 0; background: var(--surface-1); }
+  body { width: 1200px; font: 15px/1.55 "Segoe UI", system-ui, sans-serif; color: var(--text-primary); position: relative; }
+  .page { padding: 44px 40px 40px; }
+  .eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+  h1 { font-size: 38px; line-height: 1.15; margin: 10px 0 8px; }
+  .sub { font-size: 19px; color: var(--text-secondary); margin: 0 0 26px; }
+  .card { width: 820px; box-sizing: border-box; background: var(--term-bg); border-radius: 14px; padding: 24px 30px 22px; color: var(--term-text); }
+  .user { font: 16px "Cascadia Code", Consolas, monospace; color: #fff; padding: 2px 0 6px; }
+  .user .gt { color: var(--term-muted); margin-right: 12px; }
+  .tl { position: relative; padding-left: 24px; margin-top: 12px; }
+  .tl::before { content: ""; position: absolute; left: 4px; top: 10px; bottom: 12px; width: 1px; background: #3a3752; }
+  .row { position: relative; margin: 2px 0; }
+  .row::before { content: ""; position: absolute; left: -23px; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: #5d5978; }
+  .row.a::before { background: #8b7cf0; }
+  .meta { color: var(--term-muted); }
+  .chev { color: var(--term-muted); font-size: 11px; }
+  code { font: 13px "Cascadia Code", Consolas, monospace; background: #2e2b45; color: #d3ccff; border-radius: 4px; padding: 1px 5px; }
+  ul { margin: 6px 0 10px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  li::marker { color: #8b7cf0; }
+  b { font-weight: 650; color: #fff; }
+  p { margin: 0 0 8px; }
+  .note { position: absolute; left: 900px; width: 260px; font-size: 17px; line-height: 1.3; transform: translateY(-50%); }
+  .note small { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+  .before { color: var(--text-secondary); font-weight: 650; }
+  .after { color: var(--series-1); font-weight: 700; }
+  svg.overlay { position: absolute; left: 0; top: 0; pointer-events: none; }
+</style></head>
+<body><div class="page">
+  <div class="eyebrow">Claude Code &middot; context-profile plugin</div>
+  <h1>Switch profiles in plain language.</h1>
+  <p class="sub">One sentence in the session. The next one loads only what the work needs.</p>
+  <div class="card">
+    <div class="user"><span class="gt">&rsaquo;</span>switch to the web profile</div>
+    <div class="tl">
+      <div class="row meta">Thought for 1s <span class="chev">&#8964;</span></div>
+      <div class="row" style="margin-top:8px"><span id="t-before">Current context profile: global.</span></div>
+      <div class="row meta" style="margin-top:8px">2 tool calls <span class="chev">&#8964;</span></div>
+      <div class="row a" style="margin-top:10px">
+        <p><span id="t-after">Switched this folder to the <b>web</b> profile.</span></p>
+        <p>It includes <code>basic</code> too. The change is written to <code>.claude\settings.local.json</code>, at the root of <code>my-site</code>.</p>
+        <ul>
+          <li><b>Plugins on</b>: <code>frontend-design</code> and <code>modern-web-guidance</code>.</li>
+          <li><b>Plugins off</b>: <code>canva</code>, <code>databricks</code>, <code>fabric-skills</code>, <code>figma</code>, <code>miro</code> and <code>powerbi-authoring</code>.</li>
+          <li><b>Tools denied</b>: <code>Artifact</code>.</li>
+          <li><b>Unlisted plugins untouched</b>: a plugin named in no profile stays as your user settings leave it.</li>
+        </ul>
+        <p style="margin:0">The plugins change only in the <b>next session opened on this folder</b>. This one keeps the plugins it already loaded, but the tool rules may apply right away. In the new session, <code>/context</code> shows the result.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="note before" id="n-before">Before: global<small>every plugin loaded</small></div>
+<div class="note after" id="n-after">After: web<small>only the web plugins</small></div>
+<script>
+  // Place each note level with its target line, then draw an arrow from the note to the end of that line.
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "overlay");
+  svg.setAttribute("width", document.body.scrollWidth);
+  svg.setAttribute("height", document.body.scrollHeight);
+  svg.innerHTML = '<defs>' +
+    '<marker id="h-before" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b5b1c9"/></marker>' +
+    '<marker id="h-after" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b7cf0"/></marker></defs>';
+  document.body.appendChild(svg);
+  for (const [key, color] of [["before", "#b5b1c9"], ["after", "#8b7cf0"]]) {
+    const rects = document.getElementById("t-" + key).getClientRects();
+    const r = rects[rects.length - 1];
+    const y = r.top + r.height / 2 + window.scrollY;
+    const note = document.getElementById("n-" + key);
+    note.style.top = y + "px";
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", `M ${note.offsetLeft - 12} ${y} L ${r.right + 14} ${y}`);
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", "3");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("fill", "none");
+    path.setAttribute("marker-end", `url(#h-${key})`);
+    svg.appendChild(path);
+  }
+</script>
+</body></html>

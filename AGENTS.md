@@ -16,6 +16,7 @@ the plugins it distributes, one folder each under `plugins/`.
 | `tests/test_<plugin>.py` | Tests of one plugin, standard library `unittest` |
 | `.github/workflows/ci.yml` | CI: all the tests on Linux, Windows and macOS; feeds the README badges |
 | `docs/` | Images shown in the READMEs |
+| `docs/src/` | HTML source of each image: change the source, then re-render the PNG (below) |
 
 ## Rules
 
@@ -35,6 +36,20 @@ the plugins it distributes, one folder each under `plugins/`.
    and a `README.md`.
 2. An entry in `.claude-plugin/marketplace.json` and a row in the root `README.md`.
 3. Its tests in `tests/test_<plugin>.py`.
+
+## Images
+
+Each PNG in `docs/` is a screenshot of its HTML source in `docs/src/`, taken with a headless
+Chromium browser (Chrome or Edge):
+
+```bash
+chrome --headless=new --hide-scrollbars --force-device-scale-factor=<1|2> \
+  --window-size=<width>,<height> --screenshot=docs/<name>.png docs/src/<name>.html
+```
+
+`context-profile.png`: 1200x1500, scale 1. `context-profile-session.png`: 1200 wide, scale 2,
+then trim the empty bottom of the page. Keep the colour tokens of `context-profile.html` in
+every image.
 
 ## Plugin `context-profile`
 

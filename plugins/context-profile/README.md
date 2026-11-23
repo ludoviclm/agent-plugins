@@ -7,7 +7,7 @@
 **Load only the Claude Code plugins each project needs.** Say which profile you want, in plain
 language, from inside the session:
 
-![A Claude Code session: "switch to the web profile" turns the web plugins on, the data plugins off, and denies the Artifact tool](../../docs/context-profile-session.png)
+![A Claude Code session: "switch to the web profile" moves the folder from the global profile to the web profile, turns the data plugins off and denies the Artifact tool](../../docs/context-profile-session.png)
 
 The next session opened on that folder starts lighter, and says so:
 
