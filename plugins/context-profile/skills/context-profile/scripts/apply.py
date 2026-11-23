@@ -141,27 +141,39 @@ def status_label(profiles, project, local):
     """One line: 'basic + web', 'basic + pbi (partial 3/8)', 'global', with notes."""
     enabled, deny, overrides = effective(project)
     installed = installed_ids(project)
-    parts, missing_all, all_full = ["basic"], [], True
-    for name, p in profiles.items():
-        plugins = [i for i in p.get("plugins", []) if not i.startswith(SELF_PLUGIN)]
-        tools = p.get("tools", [])
-        skills = p.get("skills", [])
-        if name == "basic" or not (plugins or tools or skills):
+
+    def items(p):
+        """A profile's entries as (kind, name) pairs, so a tool and a skill never collide."""
+        return ([("plugin", i) for i in p.get("plugins", []) if not i.startswith(SELF_PLUGIN)]
+                + [("tool", t) for t in p.get("tools", [])]
+                + [("skill", s) for s in p.get("skills", [])])
+
+    def is_on(item):
+        kind, name = item
+        if kind == "plugin":
+            return enabled.get(name) is True
+        return name not in deny if kind == "tool" else overrides.get(name) != "off"
+
+    entries = {n: items(p) for n, p in profiles.items() if n != "basic" and items(p)}
+    full = {n for n, its in entries.items() if all(map(is_on, its))}
+    # An entry shared with a profile that is fully on proves nothing about this one:
+    # pdf in both pbi and docs must not show docs as partial when only pbi is on.
+    covered = {i for n in full for i in entries[n]}
+    parts, missing_all = ["basic"], []
+    for name, its in entries.items():
+        if name not in full:
+            its = [i for i in its if i not in covered]
+        on = sum(map(is_on, its))
+        if on == 0 and name not in full:
             continue
-        on = (sum(enabled.get(i) is True for i in plugins) + sum(t not in deny for t in tools)
-              + sum(overrides.get(s) != "off" for s in skills))
-        total = len(plugins) + len(tools) + len(skills)
-        if on < total:
-            all_full = False
-        if on == 0:
-            continue
-        label = name if on == total else f"{name} (partial {on}/{total})"
-        missing = [short(i) for i in plugins if enabled.get(i) is True and i not in installed]
+        label = name if name in full else f"{name} (partial {on}/{len(its)})"
+        missing = [short(i) for k, i in its if k == "plugin" and enabled.get(i) is True
+                   and i not in installed]
         if missing:
             label += f" (not installed: {', '.join(missing)})"
             missing_all += missing
         parts.append(label)
-    if all_full:
+    if full == set(entries):
         label = "global"
         if missing_all:
             label += f" (not installed: {', '.join(sorted(set(missing_all)))})"

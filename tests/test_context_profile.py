@@ -89,6 +89,15 @@ class ScriptTest(unittest.TestCase):
         self.assertIn("basic + docs", out)
         self.assertNotIn("partial", out)
 
+    def test_status_ignores_entries_shared_with_a_full_profile(self):
+        config = {"profiles": {"basic": {}, "pbi": {"plugins": ["pbi@m"], "skills": ["pdf"]},
+                               "docs": {"tools": ["Artifact"], "skills": ["docx", "pdf"]}}}
+        (self.home / "context-profiles.json").write_text(json.dumps(config), encoding="utf-8")
+        self.apply("pbi")
+        code, out = self.apply("--status")
+        self.assertIn("Profile: basic + pbi", out)
+        self.assertNotIn("docs", out)
+
     def test_dry_run_writes_nothing(self):
         code, _ = self.apply("docs", "--dry-run")
         self.assertEqual(code, 0)
