@@ -19,7 +19,7 @@ CONFIG = {
     "profiles": {
         "basic": {"plugins": []},
         "Web": {"plugins": ["frontend-design@market"]},
-        "docs": {"tools": ["Artifact"]},
+        "docs": {"tools": ["Artifact"], "skills": ["docx"]},
     }
 }
 
@@ -58,6 +58,36 @@ class ScriptTest(unittest.TestCase):
         settings = json.loads(self.local.read_text(encoding="utf-8"))
         self.assertEqual(settings["enabledPlugins"], {"frontend-design@market": True})
         self.assertEqual(settings["permissions"], {"allow": ["Bash(ls)"], "deny": ["Artifact"]})
+
+    def test_skills_on_in_their_profile_off_elsewhere(self):
+        self.apply("web")
+        settings = json.loads(self.local.read_text(encoding="utf-8"))
+        self.assertEqual(settings["skillOverrides"], {"docx": "off"})
+        code, out = self.apply("docs")
+        self.assertEqual(code, 0, out)
+        settings = json.loads(self.local.read_text(encoding="utf-8"))
+        # "on" is written so that it overrides an "off" of the user settings.
+        self.assertEqual(settings["skillOverrides"], {"docx": "on"})
+        self.assertIn("Skills on:  docx", out)
+
+    def test_skills_keep_unlisted_overrides(self):
+        self.local.write_text('{"skillOverrides": {"morning": "off"}}', encoding="utf-8")
+        self.apply("web")
+        self.apply("reset")
+        settings = json.loads(self.local.read_text(encoding="utf-8"))
+        self.assertEqual(settings, {"skillOverrides": {"morning": "off"}})
+
+    def test_status_counts_a_user_skill_override(self):
+        (self.home / "settings.json").write_text(
+            '{"skillOverrides": {"docx": "off"}, "permissions": {"deny": []}}', encoding="utf-8")
+        # Artifact is allowed, docx is off at the user scope: docs is half on.
+        code, out = self.apply("--status")
+        self.assertIn("docs (partial 1/2)", out)
+        # A local "on" beats the user "off": docs is whole again.
+        self.local.write_text('{"skillOverrides": {"docx": "on"}}', encoding="utf-8")
+        code, out = self.apply("--status")
+        self.assertIn("basic + docs", out)
+        self.assertNotIn("partial", out)
 
     def test_dry_run_writes_nothing(self):
         code, _ = self.apply("docs", "--dry-run")

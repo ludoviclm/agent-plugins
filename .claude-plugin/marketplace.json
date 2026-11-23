@@ -8,7 +8,7 @@
     {
       "name": "context-profile",
       "source": "./plugins/context-profile",
-      "description": "Switch Claude Code context profiles per project: load only the plugins and tools the work needs, and measure the weight of each plugin in the skill listing."
+      "description": "Switch Claude Code context profiles per project: load only the plugins, skills and tools the work needs, and measure the weight of each plugin in the skill listing."
     }
   ]
 }

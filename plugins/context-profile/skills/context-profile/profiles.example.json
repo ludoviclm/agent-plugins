@@ -44,9 +44,14 @@
       ]
     },
     "docs": {
-      "description": "Writing sessions: allows the page tool, denied otherwise.",
+      "description": "Writing sessions: allows the page tool and the Office skills, off otherwise.",
       "tools": [
         "Artifact"
+      ],
+      "skills": [
+        "anthropic-skills:docx",
+        "anthropic-skills:pptx",
+        "anthropic-skills:xlsx"
       ]
     }
   }

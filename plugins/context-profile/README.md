@@ -105,6 +105,10 @@ Profiles are declared once in `~/.claude/context-profiles.json`:
 - `tools`: heavy tools the profile allows - a built-in tool such as `Artifact`, or
   `mcp__<server>` for every tool of an MCP server. Outside the profiles that list them, they
   are denied, which removes them from the context.
+- `skills`: skills outside plugins the profile turns on - synced from claude.ai
+  (`anthropic-skills:docx`), built-in or personal. Outside the profiles that list them, they
+  are turned off (`skillOverrides`), which removes them from the skill listing. Write the full
+  name: a bare `docx` would target a built-in skill of that name first.
 - `basic` is always included. Profiles are cumulative: `pbi docs` loads both. Names are
   case-insensitive.
 - `global` turns everything on; `global except databricks` turns everything on but `databricks`.
@@ -168,7 +172,7 @@ has seven profiles, all from public marketplaces:
 | `databricks` | `databricks` (Anthropic official marketplace) |
 | `design` | `figma`, `canva`, `miro` |
 | `web` | `frontend-design`, `modern-web-guidance` |
-| `docs` | no plugin: allows the `Artifact` page tool, denied elsewhere |
+| `docs` | no plugin: allows the `Artifact` page tool and the `docx`, `pptx`, `xlsx` skills synced from claude.ai, off elsewhere |
 
 ## Measuring
 
@@ -220,6 +224,10 @@ it by hand.
 - **Cut a heavy tool**: list it in the `tools` of the profile that needs it (`Artifact`, or
   `mcp__<server>`). It is denied in every other profile. Denying an MCP server saves little
   today: see "What I learned building it".
+- **Cut a skill you only need sometimes**: list it in the `skills` of the profile that needs
+  it. The example keeps the Word, PowerPoint and Excel skills synced from claude.ai in `docs`
+  only. To cut a skill everywhere, put it in your user settings instead:
+  `"skillOverrides": { "anthropic-skills:morning": "off" }`.
 - **Keep something always on**: put it in `basic`.
 - **Keep something out of reach**: do not list it anywhere. A security or guardrail plugin
   listed in no profile is never switched off by the skill.
@@ -252,15 +260,20 @@ it by hand.
   1M-token model it read 10.0k tokens both before and after a switch from `global` to `pbi`,
   because the skills synced from claude.ai and the built-in ones kept the listing at the
   ceiling. The measure, or the per-skill detail of `/context`, shows what changed.
-- **A `Skill(<name>)` deny rule does not hide a skill.** It blocks the call, but the skill
-  stays in the listing. The granularity is the plugin, or the tool.
+- **A `Skill(<name>)` deny rule does not hide a skill; `skillOverrides` does.** The deny rule
+  blocks the call, but the skill stays in the listing. `"off"` in `skillOverrides` removes it,
+  for skills outside plugins, synced from claude.ai included. The scopes merge like plugins: a
+  folder's `"on"` beats a user `"off"` (Claude Code 2.1.302). Cutting six unused claude.ai
+  skills brought a Skills line stuck at its 10.0k ceiling down to 9.8k.
 
 ## Limits
 
 - Claude Code only (CLI, desktop app, IDE extensions), not the claude.ai chat. GitHub Copilot
   CLI and VS Code can install it from the marketplace, but it only manages Claude Code
   settings.
-- No per-skill granularity inside a plugin.
+- No per-skill granularity inside a plugin: `skills` covers the skills outside plugins only.
+- `skills` relies on `skillOverrides`, whose behaviour on synced and built-in skills was
+  observed on Claude Code 2.1.302, not documented.
 - Two sessions opened on the same folder share the same file: switch, then open the second.
 - The banner needs Python (see [Requirements](#requirements)).
 - Keep guardrail or security plugins out of the configuration: the skill only touches the
@@ -273,8 +286,8 @@ it by hand.
 Worth knowing, and they combine well with profiles (checked on 2026-11-22; confirm against
 the current Claude Code documentation):
 
-- **Native settings**: `/skills` and `skillOverrides` hide personal and project skills one by
-  one, but not plugin skills; `skillListingBudgetFraction` enlarges the listing budget, at the
+- **Native settings**: `/skills` and `skillOverrides` hide skills one by one (personal,
+  project, built-in and synced from claude.ai), but not plugin skills; `skillListingBudgetFraction` enlarges the listing budget, at the
   cost of more tokens in every session.
 - **Profile managers outside Claude**:
   [claude-code-profiles](https://pypi.org/project/claude-code-profiles/) (Python CLI),

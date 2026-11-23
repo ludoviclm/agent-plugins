@@ -9,7 +9,7 @@ The `ludoviclm` plugin marketplace: plugins for coding agents, starting with Cla
 
 | Plugin | What it does | Harnesses |
 | --- | --- | --- |
-| [`context-profile`](plugins/context-profile/README.md) | Switches context profiles per project: load only the plugins and tools the work needs, and measure each plugin's weight in the skill listing. | Claude Code |
+| [`context-profile`](plugins/context-profile/README.md) | Switches context profiles per project: load only the plugins, skills and tools the work needs, and measure each plugin's weight in the skill listing. | Claude Code |
 
 "Harnesses" lists where a plugin works, not only where it installs: GitHub Copilot CLI and
 VS Code read this marketplace too, but a plugin that manages Claude Code settings does

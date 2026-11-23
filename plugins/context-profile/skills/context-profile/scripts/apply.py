@@ -10,7 +10,7 @@ Usage:
   apply.py web --dry-run            show the result, write nothing
   apply.py --hook                   SessionStart hook: report the profile of the session
 
-Only the plugins and tools listed in the profiles are written; every other setting is kept.
+Only the plugins, tools and skills listed in the profiles are written; every other setting is kept.
 Profile names are case-insensitive. Standard library only.
 Exit codes: 0 ok, 2 configuration problem, 3 unknown profile.
 """
@@ -26,7 +26,7 @@ CONFIG = CLAUDE_HOME / "context-profiles.json"
 # The plugin that ships this skill: never switched by a profile.
 SELF_PLUGIN = "context-profile@"
 RESERVED = ("global", "except", "reset")
-APPLIES = ("Plugins and denied tools apply when the session restarts: reload the window (VS Code)"
+APPLIES = ("Plugins, skills and denied tools apply when the session restarts: reload the window (VS Code)"
            " or run `claude --continue` to keep the conversation. An allowed tool may appear right away.")
 
 
@@ -93,11 +93,12 @@ def resolve(profiles, words):
 
 
 def managed(profiles):
-    """The only entries this script writes: listed plugins (but its own) and listed tools."""
+    """The only entries this script writes: listed plugins (but its own), tools and skills."""
     plugins = {i for p in profiles.values() for i in p.get("plugins", [])
                if not i.startswith(SELF_PLUGIN)}
     tools = {t for p in profiles.values() for t in p.get("tools", [])}
-    return plugins, tools
+    skills = {s for p in profiles.values() for s in p.get("skills", [])}
+    return plugins, tools, skills
 
 
 def same_path(a, b):
@@ -120,14 +121,16 @@ def effective(project):
     """Merge user, project and local settings the way Claude Code does: the later scope wins
     for a plugin, deny rules add up. Without it, a folder with no local file reads as basic
     while the user settings may turn everything on."""
-    enabled, deny = {}, set()
+    enabled, deny, skills = {}, set(), {}
     for path in (CLAUDE_HOME / "settings.json",
                  project / ".claude" / "settings.json",
                  project / ".claude" / "settings.local.json"):
         s = load_json(path)
         enabled.update(s.get("enabledPlugins", {}))
         deny |= set(s.get("permissions", {}).get("deny", []))
-    return enabled, deny
+        # skillOverrides merge like plugins: a local "on" beats a user "off" (tested 2.1.302).
+        skills.update(s.get("skillOverrides", {}))
+    return enabled, deny, skills
 
 
 def short(plugin_id):
@@ -136,16 +139,18 @@ def short(plugin_id):
 
 def status_label(profiles, project, local):
     """One line: 'basic + web', 'basic + pbi (partial 3/8)', 'global', with notes."""
-    enabled, deny = effective(project)
+    enabled, deny, overrides = effective(project)
     installed = installed_ids(project)
     parts, missing_all, all_full = ["basic"], [], True
     for name, p in profiles.items():
         plugins = [i for i in p.get("plugins", []) if not i.startswith(SELF_PLUGIN)]
         tools = p.get("tools", [])
-        if name == "basic" or not (plugins or tools):
+        skills = p.get("skills", [])
+        if name == "basic" or not (plugins or tools or skills):
             continue
-        on = sum(enabled.get(i) is True for i in plugins) + sum(t not in deny for t in tools)
-        total = len(plugins) + len(tools)
+        on = (sum(enabled.get(i) is True for i in plugins) + sum(t not in deny for t in tools)
+              + sum(overrides.get(s) != "off" for s in skills))
+        total = len(plugins) + len(tools) + len(skills)
         if on < total:
             all_full = False
         if on == 0:
@@ -163,9 +168,10 @@ def status_label(profiles, project, local):
     else:
         label = " + ".join(parts)
 
-    plugins, tools = managed(profiles)
+    plugins, tools, skills = managed(profiles)
     if not (set(local.get("enabledPlugins", {})) & plugins
-            or set(local.get("permissions", {}).get("deny", [])) & tools):
+            or set(local.get("permissions", {}).get("deny", [])) & tools
+            or set(local.get("skillOverrides", {})) & skills):
         label += " (no profile set in this folder: user settings apply)"
     return label
 
@@ -233,24 +239,32 @@ def run(args):
         fail(3, "reset takes no profile name: run it alone.")
     active = set() if reset else resolve(profiles, words)
 
-    managed_plugins, managed_tools = managed(profiles)
+    managed_plugins, managed_tools, managed_skills = managed(profiles)
     on = {i for n in active for i in profiles[n].get("plugins", [])} & managed_plugins
     allowed = {t for n in active for t in profiles[n].get("tools", [])}
+    skills_on = {s for n in active for s in profiles[n].get("skills", [])}
 
     enabled = settings.setdefault("enabledPlugins", {})
+    overrides = settings.setdefault("skillOverrides", {})
     permissions = settings.setdefault("permissions", {})
     deny = [r for r in permissions.get("deny", []) if r not in managed_tools]
     if reset:
         # Drop the managed entries instead of writing them: the other scopes decide again.
         for plugin_id in managed_plugins:
             enabled.pop(plugin_id, None)
+        for skill in managed_skills:
+            overrides.pop(skill, None)
     else:
         for plugin_id in sorted(managed_plugins):
             enabled[plugin_id] = plugin_id in on
+        # "on" is written, not just "off" removed: it overrides an "off" of the user settings.
+        for skill in sorted(managed_skills):
+            overrides[skill] = "on" if skill in skills_on else "off"
         deny += sorted(managed_tools - allowed)
     permissions["deny"] = deny
     # Remove the containers a reset left empty, then the file itself if nothing is left.
-    for key, parent in (("deny", permissions), ("enabledPlugins", settings)):
+    for key, parent in (("deny", permissions), ("enabledPlugins", settings),
+                        ("skillOverrides", settings)):
         if not parent[key]:
             del parent[key]
     if not permissions:
@@ -274,6 +288,9 @@ def run(args):
     print(f"On:  {', '.join(sorted(on)) or '-'}")
     print(f"Off: {', '.join(sorted(managed_plugins - on)) or '-'}")
     print(f"Denied tools: {', '.join(sorted(managed_tools - allowed)) or '-'}")
+    if managed_skills:
+        print(f"Skills on:  {', '.join(sorted(skills_on & managed_skills)) or '-'}")
+        print(f"Skills off: {', '.join(sorted(managed_skills - skills_on)) or '-'}")
 
     missing = sorted(on - installed_ids(project))
     if missing:

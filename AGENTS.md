@@ -53,7 +53,7 @@ every image.
 
 ## Plugin `context-profile`
 
-A skill that switches per-project context profiles (enabled plugins, denied tools) in
+A skill that switches per-project context profiles (enabled plugins, skills, denied tools) in
 `.claude/settings.local.json`, installs a profile's missing plugins on approval, and
 measures each plugin's weight in the skill listing. A `SessionStart` hook shows the profile
 of each session. Claude Code only.
@@ -69,7 +69,7 @@ of each session. Claude Code only.
 
 Its rules:
 
-- **The skill only writes what it manages**: the plugins and tools listed in the user's
+- **The skill only writes what it manages**: the plugins, tools and skills listed in the user's
   profiles. Never add behaviour that touches an unlisted plugin, the plugin that ships the
   skill, or the user scope (`~/.claude/settings.json`). The skill recognises itself by
   plugin name (`context-profile@`), whatever the marketplace is called.
