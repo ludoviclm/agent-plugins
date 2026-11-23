@@ -20,15 +20,15 @@
   .row.a::before { background: #8b7cf0; }
   .meta { color: var(--term-muted); }
   .chev { color: var(--term-muted); font-size: 11px; }
-  code { font: 13px "Cascadia Code", Consolas, monospace; background: #2e2b45; color: #d3ccff; border-radius: 4px; padding: 1px 5px; }
+  code { white-space: nowrap; font: 13px "Cascadia Code", Consolas, monospace; background: #2e2b45; color: #d3ccff; border-radius: 4px; padding: 1px 5px; }
   ul { margin: 6px 0 10px; padding-left: 22px; }
   li { margin: 3px 0; }
   li::marker { color: #8b7cf0; }
   b { font-weight: 650; color: #fff; }
   p { margin: 0 0 8px; }
-  .note { position: absolute; left: 900px; width: 260px; font-size: 17px; line-height: 1.3; transform: translateY(-50%); }
-  .note small { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); }
-  .before { color: var(--text-secondary); font-weight: 650; }
+  .note { position: absolute; left: 925px; width: 270px; font: 29px/1.15 "Ink Free", "Segoe Print", "Comic Sans MS", cursive; transform: translateY(-50%) rotate(-3deg); }
+  .note small { display: block; font-size: 21px; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+  .before { color: #6f6b85; font-weight: 700; }
   .after { color: var(--series-1); font-weight: 700; }
   svg.overlay { position: absolute; left: 0; top: 0; pointer-events: none; }
 </style></head>
@@ -59,30 +59,46 @@
 <div class="note before" id="n-before">Before: global<small>every plugin loaded</small></div>
 <div class="note after" id="n-after">After: web<small>only the web plugins</small></div>
 <script>
-  // Place each note level with its target line, then draw an arrow from the note to the end of that line.
+  // Sketchy arrows in the Excalidraw spirit: a curved stroke drawn twice with a small jitter,
+  // and an open arrowhead of two short strokes. Seeded so every render looks the same.
+  let seed = 7;
+  const rnd = (a) => { seed = (seed * 16807) % 2147483647; return ((seed / 2147483647) - 0.5) * 2 * a; };
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(NS, "svg");
   svg.setAttribute("class", "overlay");
   svg.setAttribute("width", document.body.scrollWidth);
   svg.setAttribute("height", document.body.scrollHeight);
-  svg.innerHTML = '<defs>' +
-    '<marker id="h-before" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b5b1c9"/></marker>' +
-    '<marker id="h-after" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b7cf0"/></marker></defs>';
   document.body.appendChild(svg);
-  for (const [key, color] of [["before", "#b5b1c9"], ["after", "#8b7cf0"]]) {
+  const stroke = (d, color, w) => {
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", d); p.setAttribute("stroke", color); p.setAttribute("stroke-width", w);
+    p.setAttribute("fill", "none"); p.setAttribute("stroke-linecap", "round"); p.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(p);
+  };
+  // [target id, note id, colour, vertical offset of the note, bend of the curve]
+  const arrows = [["before", "#9a96b3", -40, -45], ["after", "#7b6cf0", -14, -38]];
+  for (const [key, color, dy, bend] of arrows) {
     const rects = document.getElementById("t-" + key).getClientRects();
     const r = rects[rects.length - 1];
-    const y = r.top + r.height / 2 + window.scrollY;
+    const ty = r.top + r.height / 2 + window.scrollY;
     const note = document.getElementById("n-" + key);
-    note.style.top = y + "px";
-    const path = document.createElementNS(NS, "path");
-    path.setAttribute("d", `M ${note.offsetLeft - 12} ${y} L ${r.right + 14} ${y}`);
-    path.setAttribute("stroke", color);
-    path.setAttribute("stroke-width", "3");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("fill", "none");
-    path.setAttribute("marker-end", `url(#h-${key})`);
-    svg.appendChild(path);
+    note.style.top = (ty + dy) + "px";
+    const sx = note.offsetLeft - 16, sy = ty + dy;   // start: left of the note
+    const ex = r.right + 18, ey = ty;                // end: just after the text
+    const cx = (sx + ex) / 2, cy = Math.min(sy, ey) + bend;
+    for (let i = 0; i < 2; i++) {
+      const j = () => rnd(i ? 3 : 1.5);
+      stroke(`M ${sx + j()} ${sy + j()} Q ${cx + j() * 4} ${cy + j() * 4} ${ex + j()} ${ey + j()}`, color, i ? 1.6 : 2.6);
+    }
+    // Arrowhead along the curve's end tangent (control point -> end).
+    const a = Math.atan2(ey - cy, ex - cx), len = 18;
+    for (const s of [-1, 1]) {
+      const b = a + Math.PI + s * 0.45;
+      for (let i = 0; i < 2; i++) {
+        const j = () => rnd(i ? 2 : 1);
+        stroke(`M ${ex + j()} ${ey + j()} L ${ex + len * Math.cos(b) + j()} ${ey + len * Math.sin(b) + j()}`, color, i ? 1.6 : 2.6);
+      }
+    }
   }
 </script>
 </body></html>

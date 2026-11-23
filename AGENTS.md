@@ -49,7 +49,9 @@ chrome --headless=new --hide-scrollbars --force-device-scale-factor=<1|2> \
 
 `context-profile.png`: 1200x1500, scale 1. `context-profile-session.png`: 1200 wide, scale 2,
 then trim the empty bottom of the page. Keep the colour tokens of `context-profile.html` in
-every image.
+every image. The annotations of `context-profile-session.html` are hand-drawn in the
+Excalidraw spirit: curved, jittered arrows from a fixed seed (same image at every render) and
+the Windows `Ink Free` font; render on Windows, or the font falls back.
 
 ## Plugin `context-profile`
 
