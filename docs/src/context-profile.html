@@ -27,7 +27,8 @@
   <title id="t">One profile per project</title>
   <desc id="d">Skill listing size by context profile, in characters from plugin skills, against a
     budget of about 30,000 characters: global about 41,000, over the budget; pbi and databricks
-    about 30,000, the whole budget; pbi about 16,000, half; web about 6,000.</desc>
+    about 30,000, the whole budget; pbi about 16,000, half; web about 6,000. A hand-drawn note,
+    "Make your own profiles", points to the last three.</desc>
 
   <!-- Header -->
   <text x="80" y="110" fill="var(--text-muted)" font-size="26" font-weight="600"
@@ -36,14 +37,14 @@
   <text x="80" y="268" fill="var(--text-secondary)" font-size="34">Load only the skills the work needs,</text>
   <text x="80" y="312" fill="var(--text-secondary)" font-size="34">so Claude picks the right one more often.</text>
 
-  <!-- The skill in action: what you type, what the next session shows -->
+  <!-- The skill in action: what you type, what the session shows after a reload -->
   <rect x="80" y="360" width="1040" height="170" rx="16" fill="var(--term-bg)"/>
   <text x="120" y="430" class="mono" font-size="30">
     <tspan fill="var(--term-muted)">›</tspan>
     <tspan fill="var(--term-text)" dx="8">switch to the web profile</tspan>
   </text>
   <text x="120" y="490" class="mono" font-size="30">
-    <tspan fill="var(--term-muted)">next session →</tspan>
+    <tspan fill="var(--term-muted)">after a reload →</tspan>
     <tspan fill="var(--term-text)" dx="8">only web plugins are enabled</tspan>
   </text>
 
@@ -69,19 +70,27 @@
   <text x="963.8" y="843" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="600">+11,000 over</text>
 
   <!-- pbi + databricks: 30,000 -> 822.9 -->
-  <text x="80" y="910" class="mono" fill="var(--text-primary)" font-size="30">enable pbi and databricks</text>
+  <text x="80" y="910" class="mono" fill="var(--text-primary)" font-size="30" id="p-pbidb">enable pbi and databricks</text>
   <text x="80" y="946" fill="var(--text-secondary)" font-size="26">~30,000 · the whole budget</text>
   <path d="M80 962 H818.9 a4 4 0 0 1 4 4 V1002 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
 
   <!-- pbi: 15,800 -> 471.2 -->
-  <text x="80" y="1060" class="mono" fill="var(--text-primary)" font-size="30">enable pbi</text>
+  <text x="80" y="1060" class="mono" fill="var(--text-primary)" font-size="30" id="p-pbi">enable pbi</text>
   <text x="80" y="1096" fill="var(--text-secondary)" font-size="26">~16,000 · half the budget</text>
   <path d="M80 1112 H467.2 a4 4 0 0 1 4 4 V1152 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
 
   <!-- web: 6,400 -> 238.5 -->
-  <text x="80" y="1210" class="mono" fill="var(--text-primary)" font-size="30">switch to web</text>
+  <text x="80" y="1210" class="mono" fill="var(--text-primary)" font-size="30" id="p-web">switch to web</text>
   <text x="80" y="1246" fill="var(--text-secondary)" font-size="26">~6,000 · a fifth of the budget</text>
   <path d="M80 1262 H234.5 a4 4 0 0 1 4 4 V1302 a4 4 0 0 1 -4 4 H80 Z" fill="var(--series-1)"/>
+
+  <!-- Hand-drawn note, Excalidraw spirit like docs/context-profile-session.png -->
+  <g id="own" transform="rotate(-4 1000 1040)" font-family="Ink Free, Segoe Print, Comic Sans MS, cursive">
+    <text x="870" y="1010" fill="var(--series-1)" font-size="46" font-weight="700">Make your</text>
+    <text x="870" y="1060" fill="var(--series-1)" font-size="46" font-weight="700">own profiles</text>
+    <text x="872" y="1098" fill="#3a3936" font-size="30">any mix you need</text>
+  </g>
+  <g id="arrows"></g>
 
   <!-- Footer -->
   <line x1="80" y1="1365" x2="1120" y2="1365" stroke="var(--grid)" stroke-width="2"/>
@@ -89,5 +98,37 @@
         fill="var(--text-secondary)" font-weight="400"> · github.com/ludoviclm/agent-plugins · MIT</tspan></text>
   <text x="80" y="1460" fill="var(--text-muted)" font-size="22">Measured with measure.py · Claude Code 2.1.302 · 1M-token model · Nov 2026</text>
 </svg>
+<script>
+  // Sketchy arrows from the note to the custom profiles: a curved stroke drawn twice with a
+  // small jitter and an open arrowhead. Seeded, so every render looks the same.
+  let seed = 11;
+  const rnd = (a) => { seed = (seed * 16807) % 2147483647; return ((seed / 2147483647) - 0.5) * 2 * a; };
+  const NS = "http://www.w3.org/2000/svg", g = document.getElementById("arrows"), color = "#7b6cf0";
+  const stroke = (d, w) => {
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", d); p.setAttribute("stroke", color); p.setAttribute("stroke-width", w);
+    p.setAttribute("fill", "none"); p.setAttribute("stroke-linecap", "round"); p.setAttribute("stroke-linejoin", "round");
+    g.appendChild(p);
+  };
+  // [label id, start point on the note's left, bend of the curve (negative = upwards)]
+  const arrows = [["p-pbidb", 862, 968, -90], ["p-pbi", 858, 1035, -30], ["p-web", 858, 1095, 40]];
+  for (const [id, sx, sy, bend] of arrows) {
+    const t = document.getElementById(id), b = t.getBBox();
+    const ex = b.x + b.width + 22, ey = b.y + b.height / 2;
+    const cx = (sx + ex) / 2, cy = (sy + ey) / 2 + bend;
+    for (let i = 0; i < 2; i++) {
+      const j = () => rnd(i ? 3 : 1.5);
+      stroke(`M ${sx + j()} ${sy + j()} Q ${cx + j() * 4} ${cy + j() * 4} ${ex + j()} ${ey + j()}`, i ? 2 : 3.2);
+    }
+    const a = Math.atan2(ey - cy, ex - cx), len = 22;
+    for (const s of [-1, 1]) {
+      const h = a + Math.PI + s * 0.45;
+      for (let i = 0; i < 2; i++) {
+        const j = () => rnd(i ? 2 : 1);
+        stroke(`M ${ex + j()} ${ey + j()} L ${ex + len * Math.cos(h) + j()} ${ey + len * Math.sin(h) + j()}`, i ? 2 : 3.2);
+      }
+    }
+  }
+</script>
 </body>
 </html>
