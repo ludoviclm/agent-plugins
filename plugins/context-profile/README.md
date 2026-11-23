@@ -2,17 +2,66 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ludoviclm/agent-plugins/ci.yml?branch=main&logo=github&label=CI)](https://github.com/ludoviclm/agent-plugins/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/ludoviclm/agent-plugins)](../../LICENSE)
-[![python](https://img.shields.io/badge/python-3.8%2B-blue)](#measuring)
+[![python](https://img.shields.io/badge/python-3.8%2B-blue)](#requirements)
 
-A Claude Code skill that switches **context profiles** per project: each folder loads only the
-plugins and heavy tools its work needs. You say "switch to the web profile", the skill writes
-the project's local settings, and the next session starts lighter and sharper.
+**Load only the Claude Code plugins each project needs.** Say which profile you want, in plain
+language, from inside the session:
 
-It also **measures** how much of the skill listing each plugin takes, so you know what to cut.
+```text
+> switch to the web profile
 
-![One profile per project: skill listing size by profile, against a 30,000-character budget](../../docs/context-profile.png)
+Profiles: basic, web
+File: ~/projects/my-site/.claude/settings.local.json
+On:  frontend-design@claude-plugins-official, modern-web-guidance@claude-plugins-official
+Off: databricks@claude-plugins-official, fabric-skills@fabric-collection, powerbi-authoring@fabric-collection, ...
+Denied tools: Artifact
+Plugins apply to the next session opened on this folder; tools may change in this session already.
+```
+
+The next session opened on that folder starts lighter, and says so:
+
+```text
+Context profile: basic + web
+```
+
+Why it matters: Claude Code lists every skill to the model within a fixed budget. Past it,
+descriptions are dropped, and Claude no longer knows when to use those skills. Each profile
+keeps a folder under budget, and the skill **measures** how much each plugin takes, so you
+know what to cut.
+
+## Quick start
+
+### Requirements
+
+- Claude Code: CLI, desktop app or IDE extension.
+- Python 3.8+ on the `PATH`, as `python3` or `python`, standard library only. It runs the
+  switch in one step, the session banner and the measure. Without it, Claude applies the
+  profile by editing the settings file itself, and the banner stays silent.
+
+### Install
+
+From the [`ludoviclm` marketplace](../../README.md):
+
+```text
+/plugin marketplace add ludoviclm/agent-plugins
+/plugin install context-profile@ludoviclm
+```
+
+It installs at the user scope (the default), so it is available in every folder. Then, in any
+session, ask "create my context profiles": the skill offers to start from
+[`profiles.example.json`](skills/context-profile/profiles.example.json).
+
+Installed before the marketplace was renamed (`context-profile@context-profile`)? Remove the
+old marketplace with `/plugin marketplace remove context-profile`, then run the two commands
+above. Your `~/.claude/context-profiles.json` does not change.
+
+Without the plugin system: copy `skills/context-profile/` to `~/.claude/skills/context-profile/`
+to make it a personal skill. You get the switch and the measure, not the session banner,
+which is a plugin hook.
 
 ## The problem
+
+![One profile per project: skill listing size by profile, against a 30,000-character budget](../../docs/context-profile.png)
 
 At session start, Claude Code sends the model a listing of every available skill: its name
 and description. That listing has a budget. Above it, Claude Code drops descriptions, and a
@@ -114,9 +163,8 @@ only has to say "switch to the pbi profile".
 profiles name: a plugin listed nowhere stays as your user settings leave it, on in every
 folder. Run the measure first to see which ones to list.
 
-A full example is in
-[`profiles.example.json`](skills/context-profile/profiles.example.json),
-with seven profiles, all from public marketplaces:
+The full example, [`profiles.example.json`](skills/context-profile/profiles.example.json),
+has seven profiles, all from public marketplaces:
 
 | Profile | Plugins |
 | --- | --- |
@@ -128,9 +176,9 @@ with seven profiles, all from public marketplaces:
 | `web` | `frontend-design`, `modern-web-guidance` |
 | `docs` | no plugin: allows the `Artifact` page tool, denied elsewhere |
 
-With no configuration file, the skill offers to create one from this example.
-
 ## Measuring
+
+Ask "how heavy are my plugins?", or run it yourself from the repository root:
 
 ```bash
 python plugins/context-profile/skills/context-profile/scripts/measure.py --project <folder>
@@ -145,27 +193,7 @@ semantic-models@power-bi-agentic-development  yes       6    3,069     10%
 Enabled: 37 skills, 15,142 characters, 50% of a 30,000-character budget.
 ```
 
-Python 3.8+, standard library only. The skill runs it for you when you ask how heavy your
-plugins are. It is an estimate: built-in skills are not counted, and `/context` remains the
-reference.
-
-## Install
-
-As a plugin, from the [`ludoviclm` marketplace](../../README.md):
-
-```text
-/plugin marketplace add ludoviclm/agent-plugins
-/plugin install context-profile@ludoviclm
-```
-
-Installed before the marketplace was renamed (`context-profile@context-profile`)? Remove the
-old marketplace with `/plugin marketplace remove context-profile`, then run the two commands
-above. Your `~/.claude/context-profiles.json` does not change.
-
-Or copy `plugins/context-profile/skills/context-profile/` to `~/.claude/skills/context-profile/`
-to make it a personal skill, available in every folder.
-
-Then ask "create my context profiles" in any session.
+It is an estimate: built-in skills are not counted, and `/context` remains the reference.
 
 ## Customizing the skill
 
@@ -230,8 +258,7 @@ it by hand.
   settings.
 - No per-skill granularity inside a plugin.
 - Two sessions opened on the same folder share the same file: switch, then open the second.
-- The banner needs Python 3.8+ on the `PATH`, as `python3` or `python`. Without it, the
-  banner stays silent; switching still works by hand.
+- The banner needs Python (see [Requirements](#requirements)).
 - Keep guardrail or security plugins out of the configuration: the skill only touches the
   plugins you list, so an unlisted plugin is never switched off.
 - A profile cannot allow a tool your user settings deny: deny rules of every scope add up.
